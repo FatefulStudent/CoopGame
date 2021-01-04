@@ -19,14 +19,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
 	TSubclassOf<UDamageType> DamageType = UDamageType::StaticClass();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Effects)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|MuzzleFlash")
+	FName MuzzleSocketName = TEXT("MuzzleSocket");
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|MuzzleFlash")
 	UParticleSystem* MuzzleEffect;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Effects)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Impact")
 	UParticleSystem* ImpactEffect;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Effects)
-	FName MuzzleSocketName = TEXT("MuzzleSocket");
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Trace")
+	UParticleSystem* TracerEffect;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Trace")
+	FName TraceTargetName = TEXT("Target");
 
 public:	
 	ASWeapon();
@@ -36,7 +42,7 @@ protected:
 	void Fire();
 
 private:
-	void PlayEffectsOnShoot() const;
+	void PlayEffectsOnShoot(const FVector& TraceEffectEnd) const;
 	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;
 	void ApplyDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult);
 	void Shoot(
