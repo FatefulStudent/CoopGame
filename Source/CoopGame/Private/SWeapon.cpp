@@ -17,39 +17,62 @@ void ASWeapon::Fire()
 
 	if (AActor* OwnerActor = GetOwner())
 	{
-		FVector EyeLocation;
+		FVector TraceStart;
 		FRotator EyeRotation;
-		OwnerActor->GetActorEyesViewPoint(EyeLocation, EyeRotation);
+		OwnerActor->GetActorEyesViewPoint(TraceStart, EyeRotation);
 
 		const FVector ShotDirection = EyeRotation.Vector();
-		const FVector TraceEnd = EyeLocation + ShotDirection * 10000.0f;
+		const FVector TraceEnd = TraceStart + ShotDirection * 10000.0f;
 		
-		ShootAndDamageHitActor(OwnerActor, EyeLocation, TraceEnd, ShotDirection);
+		Shoot(TraceStart, TraceEnd, ShotDirection);
+		PlayEffectsOnShoot();
 	}
 }
 
-void ASWeapon::ShootAndDamageHitActor(AActor* OwnerActor,
+void ASWeapon::Shoot(
 	const FVector& TraceStart,
 	const FVector& TraceEnd,
 	const FVector& ShotDirection)
 {
 	FCollisionQueryParams CollisionQueryParams;
-	CollisionQueryParams.AddIgnoredActor(OwnerActor);
+	CollisionQueryParams.AddIgnoredActor(GetOwner());
 	CollisionQueryParams.AddIgnoredActor(this);
 	CollisionQueryParams.bTraceComplex = true;
 
 	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility))
+	const bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
+	if (bBlockingHit)
 	{
-		UGameplayStatics::ApplyPointDamage(HitResult.GetActor(),
-            20.0,
-            ShotDirection,
-            HitResult, 
-            GetInstigatorController(), 
-            this,
-            DamageType);
-			
+		if (HasAuthority())
+			ApplyDamageToHitActor(ShotDirection, HitResult);
+
+		PlayEffectsOnImpact(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 	}
 
 	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 10.0f);
+	
+}
+
+void ASWeapon::ApplyDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
+{
+	UGameplayStatics::ApplyPointDamage(
+        HitResult.GetActor(),
+        20.0,
+        ShotDirection,
+        HitResult, 
+        GetInstigatorController(), 
+        this,
+        DamageType);
+}
+
+void ASWeapon::PlayEffectsOnShoot() const
+{
+	if (MuzzleEffect)
+		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletalMeshComp, MuzzleSocketName);
+}
+
+void ASWeapon::PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const
+{
+	if (ImpactEffect)
+		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactEffect, ImpactLocation, ImpactRotation);
 }
