@@ -29,7 +29,10 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// ~ACharacter overrides
-	
-	void MoveForvard(float Value);
+
+	void MoveForward(float Value);
 	void MoveRight(float Value);
+
+	void BeginCrouch();
+	void EndCrouch();
 };
