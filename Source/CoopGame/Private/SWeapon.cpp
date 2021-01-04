@@ -1,6 +1,7 @@
 #include "SWeapon.h"
 
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 ASWeapon::ASWeapon()
 {
@@ -8,18 +9,6 @@ ASWeapon::ASWeapon()
 	
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;
-}
-
-void ASWeapon::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-void ASWeapon::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void ASWeapon::Fire()
@@ -32,20 +21,35 @@ void ASWeapon::Fire()
 		FRotator EyeRotation;
 		OwnerActor->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
-		FVector TraceEnd = EyeLocation + EyeRotation.Vector() * 10000.0f;
-
-		FCollisionQueryParams CollisionQueryParams;
-		CollisionQueryParams.AddIgnoredActor(OwnerActor);
-		CollisionQueryParams.AddIgnoredActor(this);
-		CollisionQueryParams.bTraceComplex = true;
+		const FVector ShotDirection = EyeRotation.Vector();
+		const FVector TraceEnd = EyeLocation + ShotDirection * 10000.0f;
 		
-		FHitResult HitResult;
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECC_Visibility))
-		{
-			// blocking hit
-		}
-
-		DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::Red, false, 10.0f);
+		ShootAndDamageHitActor(OwnerActor, EyeLocation, TraceEnd, ShotDirection);
 	}
 }
 
+void ASWeapon::ShootAndDamageHitActor(AActor* OwnerActor,
+	const FVector& TraceStart,
+	const FVector& TraceEnd,
+	const FVector& ShotDirection)
+{
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(OwnerActor);
+	CollisionQueryParams.AddIgnoredActor(this);
+	CollisionQueryParams.bTraceComplex = true;
+
+	FHitResult HitResult;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility))
+	{
+		UGameplayStatics::ApplyPointDamage(HitResult.GetActor(),
+            20.0,
+            ShotDirection,
+            HitResult, 
+            GetInstigatorController(), 
+            this,
+            DamageType);
+			
+	}
+
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 10.0f);
+}
