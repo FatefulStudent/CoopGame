@@ -23,6 +23,9 @@ protected:
 public:
 	ASCharacter();
 
+	/** Returns	Camera location */
+	virtual FVector GetPawnViewLocation() const override;
+
 protected:
 	// ACharacter overrides
 	virtual void BeginPlay() override;

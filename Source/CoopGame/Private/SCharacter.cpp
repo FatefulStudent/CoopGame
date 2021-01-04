@@ -19,6 +19,11 @@ ASCharacter::ASCharacter()
 
 }
 
+FVector ASCharacter::GetPawnViewLocation() const
+{
+	return CameraComp->GetComponentLocation();
+}
+
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
