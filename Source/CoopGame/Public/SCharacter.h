@@ -8,7 +8,7 @@
 class UCameraComponent;
 class USpringArmComponent;
 
-UCLASS()
+UCLASS(meta=(ChildCannotTick))
 class COOPGAME_API ASCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -28,8 +28,6 @@ public:
 
 protected:
 	// ACharacter overrides
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// ~ACharacter overrides
 

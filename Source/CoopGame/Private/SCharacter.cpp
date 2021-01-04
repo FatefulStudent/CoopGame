@@ -6,7 +6,7 @@
 
 ASCharacter::ASCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
     SpringArmComp->bUsePawnControlRotation = true;
@@ -22,18 +22,6 @@ ASCharacter::ASCharacter()
 FVector ASCharacter::GetPawnViewLocation() const
 {
 	return CameraComp->GetComponentLocation();
-}
-
-void ASCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-void ASCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
