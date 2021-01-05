@@ -41,12 +41,15 @@ protected:
 	UFUNCTION(BlueprintCallable, Category=Firing)
 	void Fire();
 
-private:
-	void PlayEffectsOnShoot(const FVector& TraceEffectEnd) const;
-	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;
-	void ApplyDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult);
-	void Shoot(
+	virtual void Shoot(
 		const FVector& TraceStart,
 		const FVector& TraceEnd,
 		const FVector& ShotDirection);
+	
+	void PlayTraceEffect(const FVector& TraceEffectEnd) const;
+	void PlayMuzzleEffect() const;
+	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;
+
+private:
+	void ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult);
 };

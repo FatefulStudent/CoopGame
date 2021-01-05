@@ -39,43 +39,24 @@ void ASWeapon::Shoot(
 	CollisionQueryParams.AddIgnoredActor(this);
 	CollisionQueryParams.bTraceComplex = true;
 
-	
-
 	FHitResult HitResult;
 	const bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
 	if (bBlockingHit)
 	{
 		if (HasAuthority())
-			ApplyDamageToHitActor(ShotDirection, HitResult);
+			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
 		PlayEffectsOnImpact(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 	}
 
 	const FVector& TraceEffectEnd = bBlockingHit ? HitResult.ImpactPoint : TraceEnd;
 
-	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 10.0f);
-
-	PlayEffectsOnShoot(TraceEffectEnd);
+	PlayMuzzleEffect();
+	PlayTraceEffect(TraceEffectEnd);
 }
 
-void ASWeapon::ApplyDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
+void ASWeapon::PlayTraceEffect(const FVector& TraceEffectEnd) const
 {
-	UGameplayStatics::ApplyPointDamage(
-        HitResult.GetActor(),
-        20.0,
-        ShotDirection,
-        HitResult, 
-        GetInstigatorController(), 
-        this,
-        DamageType);
-}
-
-void ASWeapon::PlayEffectsOnShoot(const FVector& TraceEffectEnd) const
-{
-	if (MuzzleEffect)
-		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletalMeshComp, MuzzleSocketName);
-
-	
 	if (TracerEffect)
 	{
 		const FVector MuzzleLocation = SkeletalMeshComp->GetSocketLocation(MuzzleSocketName);
@@ -86,8 +67,26 @@ void ASWeapon::PlayEffectsOnShoot(const FVector& TraceEffectEnd) const
 	}
 }
 
+void ASWeapon::PlayMuzzleEffect() const
+{
+	if (MuzzleEffect)
+		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletalMeshComp, MuzzleSocketName);
+}
+
 void ASWeapon::PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const
 {
 	if (ImpactEffect)
 		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactEffect, ImpactLocation, ImpactRotation);
+}
+
+void ASWeapon::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
+{
+	UGameplayStatics::ApplyPointDamage(
+        HitResult.GetActor(),
+        20.0,
+        ShotDirection,
+        HitResult, 
+        GetInstigatorController(), 
+        this,
+        DamageType);
 }
