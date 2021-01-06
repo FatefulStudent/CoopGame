@@ -50,6 +50,8 @@ protected:
 	void PlayMuzzleEffect() const;
 	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;
 
+	void DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const;
+
 private:
 	void ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult);
 };

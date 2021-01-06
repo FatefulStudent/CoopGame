@@ -4,9 +4,17 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
+static int32 DebugWeaponDrawing = 0;
+FAutoConsoleVariableRef CVARDebugWeaponDrawing (
+	TEXT("COOP.DebugWeapons"),
+	DebugWeaponDrawing,
+	TEXT("Draw debug lines when firing hitscan weapon"),
+	ECVF_Cheat
+);
+
 ASWeapon::ASWeapon()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;
@@ -53,6 +61,9 @@ void ASWeapon::Shoot(
 
 	PlayMuzzleEffect();
 	PlayTraceEffect(TraceEffectEnd);
+
+	if (DebugWeaponDrawing > 0)
+		DrawDebug(TraceStart, TraceEnd);
 }
 
 void ASWeapon::PlayTraceEffect(const FVector& TraceEffectEnd) const
@@ -77,6 +88,11 @@ void ASWeapon::PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator
 {
 	if (ImpactEffect)
 		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactEffect, ImpactLocation, ImpactRotation);
+}
+
+void ASWeapon::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
+{
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 2.0f);
 }
 
 void ASWeapon::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
