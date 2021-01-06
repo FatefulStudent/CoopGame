@@ -1,4 +1,5 @@
 #include "SCharacter.h"
+#include "SWeapon.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
@@ -22,6 +23,13 @@ ASCharacter::ASCharacter()
 FVector ASCharacter::GetPawnViewLocation() const
 {
 	return CameraComp->GetComponentLocation();
+}
+
+void ASCharacter::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	
+	SpawnWeapon();
 }
 
 void ASCharacter::BeginPlay()
@@ -56,6 +64,26 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	
 	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ASCharacter::BeginZoom);
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::Fire);
+}
+
+void ASCharacter::SpawnWeapon()
+{
+	FActorSpawnParameters WeaponSpawnParams;
+	WeaponSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	WeaponSpawnParams.Instigator = this;
+	WeaponSpawnParams.Owner = this;
+
+	CurrentWeapon = GetWorld()->SpawnActor<ASWeapon>(InitialWeaponClass, WeaponSpawnParams);
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->AttachToComponent(
+	        GetMesh(),
+	        FAttachmentTransformRules::SnapToTargetIncludingScale,
+	        WeaponSocketName);
+	}
 }
 
 void ASCharacter::TickCamera(float DeltaSeconds)
@@ -65,6 +93,14 @@ void ASCharacter::TickCamera(float DeltaSeconds)
 	const float NewFOV = FMath::FInterpTo(CurrentFOV, TargetFOV, DeltaSeconds, ZoomInterpSpeed);
 
 	CameraComp->SetFieldOfView(NewFOV);
+}
+
+void ASCharacter::Fire()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Fire();
+	}
 }
 
 void ASCharacter::MoveForward(float Value)

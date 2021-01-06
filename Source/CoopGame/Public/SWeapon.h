@@ -37,9 +37,10 @@ protected:
 public:	
 	ASWeapon();
 
-protected:
 	UFUNCTION(BlueprintCallable, Category=Firing)
 	void Fire();
+
+protected:
 
 	virtual void Shoot(
 		const FVector& TraceStart,
