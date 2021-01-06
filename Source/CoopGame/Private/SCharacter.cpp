@@ -25,9 +25,9 @@ FVector ASCharacter::GetPawnViewLocation() const
 	return CameraComp->GetComponentLocation();
 }
 
-void ASCharacter::OnConstruction(const FTransform& Transform)
+void ASCharacter::PostInitializeComponents()
 {
-	Super::OnConstruction(Transform);
+	Super::PostInitializeComponents();
 	
 	SpawnWeapon();
 }
@@ -67,6 +67,12 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
 
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::Fire);
+}
+
+void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (CurrentWeapon)
+		CurrentWeapon->MarkPendingKill();
 }
 
 void ASCharacter::SpawnWeapon()

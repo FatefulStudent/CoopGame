@@ -49,10 +49,11 @@ public:
 
 protected:
 	// ACharacter overrides
-	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// ~ACharacter overrides
 	
 	void SpawnWeapon();
