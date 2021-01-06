@@ -19,6 +19,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
 	TSubclassOf<UDamageType> DamageType = UDamageType::StaticClass();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|CameraShake")
+	TSubclassOf<UCameraShake> CameraShakeClass = UCameraShake::StaticClass();
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|MuzzleFlash")
 	FName MuzzleSocketName = TEXT("MuzzleSocket");
 	
@@ -46,7 +49,9 @@ protected:
 		const FVector& TraceStart,
 		const FVector& TraceEnd,
 		const FVector& ShotDirection);
-	
+
+	void PlayCameraShake() const;
+	void PlayFireEffects(const FVector& TraceEffectEnd) const;
 	void PlayTraceEffect(const FVector& TraceEffectEnd) const;
 	void PlayMuzzleEffect() const;
 	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;

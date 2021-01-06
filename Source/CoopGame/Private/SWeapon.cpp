@@ -59,11 +59,26 @@ void ASWeapon::Shoot(
 
 	const FVector& TraceEffectEnd = bBlockingHit ? HitResult.ImpactPoint : TraceEnd;
 
-	PlayMuzzleEffect();
-	PlayTraceEffect(TraceEffectEnd);
+	PlayFireEffects(TraceEffectEnd);
 
 	if (DebugWeaponDrawing > 0)
 		DrawDebug(TraceStart, TraceEnd);
+}
+
+void ASWeapon::PlayCameraShake() const
+{
+	if (APlayerController* InstigatorPlayerController = Cast<APlayerController>(GetInstigatorController()))
+	{
+		InstigatorPlayerController->ClientPlayCameraShake(CameraShakeClass);
+	}
+}
+
+void ASWeapon::PlayFireEffects(const FVector& TraceEffectEnd) const
+{
+	PlayCameraShake();
+	PlayTraceEffect(TraceEffectEnd);
+	PlayMuzzleEffect();
+	
 }
 
 void ASWeapon::PlayTraceEffect(const FVector& TraceEffectEnd) const

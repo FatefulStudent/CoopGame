@@ -37,6 +37,7 @@ void ASCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	DefaultFOV = CameraComp->FieldOfView;
+	CurrentWeapon->SetInstigator(this);
 }
 
 void ASCharacter::Tick(float DeltaSeconds)
