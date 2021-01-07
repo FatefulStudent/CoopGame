@@ -29,7 +29,13 @@ protected:
 	UParticleSystem* MuzzleEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Impact")
-	UParticleSystem* ImpactEffect;
+	UParticleSystem* DefaultImpactEffect;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Impact")
+	UParticleSystem* FleshImpactEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Impact")
+	UParticleSystem* VulnerableFleshImpactEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Trace")
 	UParticleSystem* TracerEffect;
@@ -54,7 +60,7 @@ protected:
 	void PlayFireEffects(const FVector& TraceEffectEnd) const;
 	void PlayTraceEffect(const FVector& TraceEffectEnd) const;
 	void PlayMuzzleEffect() const;
-	void PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const;
+	void PlayEffectsOnImpact(const FHitResult& HitResult) const;
 
 	void DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const;
 

@@ -1,4 +1,5 @@
 #include "SWeapon.h"
+#include "CoopGame/CoopGame.h"
 
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -46,15 +47,22 @@ void ASWeapon::Shoot(
 	CollisionQueryParams.AddIgnoredActor(GetOwner());
 	CollisionQueryParams.AddIgnoredActor(this);
 	CollisionQueryParams.bTraceComplex = true;
+	CollisionQueryParams.bReturnPhysicalMaterial = true;
 
 	FHitResult HitResult;
-	const bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
+	const bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		CollisionQueryParams);
+	
 	if (bBlockingHit)
 	{
 		if (HasAuthority())
 			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
-		PlayEffectsOnImpact(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
+		PlayEffectsOnImpact(HitResult);
 	}
 
 	const FVector& TraceEffectEnd = bBlockingHit ? HitResult.ImpactPoint : TraceEnd;
@@ -99,10 +107,34 @@ void ASWeapon::PlayMuzzleEffect() const
 		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, SkeletalMeshComp, MuzzleSocketName);
 }
 
-void ASWeapon::PlayEffectsOnImpact(const FVector& ImpactLocation, const FRotator& ImpactRotation) const
+void ASWeapon::PlayEffectsOnImpact(const FHitResult& HitResult) const
 {
+	const EPhysicalSurface HitSurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
+
+	UParticleSystem* ImpactEffect = nullptr;
+	
+	switch (HitSurfaceType)
+	{
+	case SURFACE_FLESH_DEFAULT:
+		ImpactEffect = FleshImpactEffect;
+		break;
+	case SURFACE_FLESH_VULNERABLE:
+		ImpactEffect = VulnerableFleshImpactEffect;
+		break;
+	default:
+		ImpactEffect = DefaultImpactEffect;
+		break;
+	}
+
 	if (ImpactEffect)
-		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactEffect, ImpactLocation, ImpactRotation);
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			this,
+			ImpactEffect,
+			HitResult.ImpactPoint,
+			HitResult.ImpactNormal.Rotation());
+	}
+	
 }
 
 void ASWeapon::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
