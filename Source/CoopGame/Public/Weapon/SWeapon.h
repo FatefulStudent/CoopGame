@@ -20,6 +20,9 @@ class COOPGAME_API ASWeapon : public AActor
 public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Visual)
 	USkeletalMeshComponent* SkeletalMeshComp;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Visual)
+	FName MuzzleSocketName = TEXT("MuzzleSocket");
 	
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Parts)

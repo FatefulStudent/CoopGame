@@ -1,6 +1,7 @@
 #include "Weapon/Parts/SWeaponShooter.h"
 #include "Weapon/Parts/SWeaponClip.h"
 #include "Weapon/Parts/SWeaponEffects.h"
+#include "Weapon/Projectiles/SGrenadeProjectile.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
 
@@ -15,6 +16,18 @@ FAutoConsoleVariableRef CVARDebugWeaponDrawing(
     ECVF_Cheat
 );
 
+namespace WeaponShooterLocal
+{
+	void GetHitScanTraceParams(FVector& ShotDirection, FVector& TraceStart, FVector& TraceEnd, APawn* PawnOwner)
+	{
+		FRotator EyeRotation;
+		PawnOwner->GetActorEyesViewPoint(TraceStart, EyeRotation);
+
+		ShotDirection = EyeRotation.Vector();
+		TraceEnd = TraceStart + ShotDirection * 10000.0f;
+	}
+}
+
 USWeaponShooter::USWeaponShooter()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -28,21 +41,20 @@ void USWeaponShooter::InitConstructor(USWeaponClip* InClip, USWeaponEffects* InW
 }
 
 void USWeaponShooter::Fire()
-{	
-	// Trace the world from the owners eyes perspective
-	if (AActor* InstigatorActor = WeaponActor->GetInstigator())
-	{
-		FVector TraceStart;
-		FRotator EyeRotation;
-		InstigatorActor->GetActorEyesViewPoint(TraceStart, EyeRotation);
+{
+	if (!ensureAlways(Clip->HasBullets()))
+		return;
+	
+	WeaponEffects->PlayCameraShake();
+	WeaponEffects->PlayMuzzleEffect();
+	
+	if (bShootProjectiles)
+		ShootProjectile();
+	else
+		ShootHitScan();
 
-		const FVector ShotDirection = EyeRotation.Vector();
-		const FVector TraceEnd = TraceStart + ShotDirection * 10000.0f;
-
-		Shoot(TraceStart, TraceEnd, ShotDirection);
-		Clip->SpendBullet();
-		OnFired.Broadcast();
-	}
+	Clip->SpendBullet();
+	OnFired.Broadcast();
 }
 
 void USWeaponShooter::BeginPlay()
@@ -55,7 +67,70 @@ void USWeaponShooter::BeginPlay()
 		ensureAlways(false);
 }
 
-void USWeaponShooter::Shoot(const FVector& TraceStart, const FVector& TraceEnd, const FVector& ShotDirection)
+void USWeaponShooter::ShootProjectile()
+{
+	APawn* PawnActor = Cast<APawn>(WeaponActor->GetOwner());
+	// try and fire a projectile
+	if (ProjectileClass && PawnActor)
+	{
+		SpawnProjectileAtMuzzle(PawnActor);
+	}
+}
+
+void USWeaponShooter::SpawnProjectileAtMuzzle(APawn* PawnActor) const
+{
+	// Grabs location from the mesh that must have a socket called "Muzzle" in his skeleton
+	const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
+	// Use controller rotation which is our view direction in first person
+	const FRotator& MuzzleRotation = PawnActor->GetControlRotation();
+
+	//Set Spawn Collision Handling Override
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = PawnActor;
+	SpawnParameters.Instigator = PawnActor;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	// spawn the projectile at the muzzle
+	GetWorld()->SpawnActor<ASGrenadeProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParameters);
+}
+
+void USWeaponShooter::ShootHitScan()
+{
+	FVector TraceEffectEnd;
+	PerformHitScanShot(TraceEffectEnd);
+	
+	WeaponEffects->PlayTraceEffect(TraceEffectEnd);
+}
+
+void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
+{
+	// Trace the world from the owners eyes perspective
+	APawn* InstigatorActor = WeaponActor->GetInstigator();
+	if (!InstigatorActor)
+		return;
+
+	FVector ShotDirection, TraceStart, TraceEnd;
+	WeaponShooterLocal::GetHitScanTraceParams(ShotDirection, TraceStart, TraceEnd, InstigatorActor);
+
+	FHitResult HitResult;
+	const bool bBlockingHit = PerformLineTrace(TraceStart, TraceEnd, HitResult);
+
+	if (bBlockingHit)
+	{
+		if (WeaponActor->HasAuthority())
+			ApplyPointDamageToHitActor(ShotDirection, HitResult);
+
+		TraceEffectEnd = HitResult.ImpactPoint;
+		WeaponEffects->PlayEffectsOnImpact(HitResult);
+	}
+	else
+		TraceEffectEnd = TraceEnd;
+
+	if (DebugWeaponDrawing > 0)
+		DrawDebug(TraceStart, TraceEnd);
+}
+
+bool USWeaponShooter::PerformLineTrace(const FVector& TraceStart, const FVector& TraceEnd, FHitResult& HitResult) const
 {
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(WeaponActor);
@@ -63,33 +138,12 @@ void USWeaponShooter::Shoot(const FVector& TraceStart, const FVector& TraceEnd, 
 	CollisionQueryParams.bTraceComplex = true;
 	CollisionQueryParams.bReturnPhysicalMaterial = true;
 
-	FHitResult HitResult;
-	const bool bBlockingHit = GetWorld()->LineTraceSingleByChannel(
+	return GetWorld()->LineTraceSingleByChannel(
         HitResult,
         TraceStart,
         TraceEnd,
         COLLISION_WEAPON,
         CollisionQueryParams);
-
-	if (bBlockingHit)
-	{
-		if (WeaponActor->HasAuthority())
-			ApplyPointDamageToHitActor(ShotDirection, HitResult);
-
-		WeaponEffects->PlayEffectsOnImpact(HitResult);
-	}
-
-	const FVector& TraceEffectEnd = bBlockingHit ? HitResult.ImpactPoint : TraceEnd;
-
-	WeaponEffects->PlayFireEffects(TraceEffectEnd);
-
-	if (DebugWeaponDrawing > 0)
-		DrawDebug(TraceStart, TraceEnd);
-}
-
-void USWeaponShooter::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
-{
-	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 2.0f);
 }
 
 void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
@@ -109,4 +163,7 @@ void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, c
         DamageType);
 }
 
-
+void USWeaponShooter::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
+{
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 2.0f);
+}

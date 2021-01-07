@@ -20,13 +20,6 @@ void USWeaponEffects::BeginPlay()
 		ensureAlways(false);
 }
 
-void USWeaponEffects::PlayFireEffects(const FVector& TraceEffectEnd) const
-{
-	PlayCameraShake();
-	PlayTraceEffect(TraceEffectEnd);
-	PlayMuzzleEffect();
-}
-
 void USWeaponEffects::PlayCameraShake() const
 {
 	if (APlayerController* InstigatorPlayerController = Cast<APlayerController>(WeaponActor->GetInstigatorController()))
@@ -35,22 +28,22 @@ void USWeaponEffects::PlayCameraShake() const
 	}
 }
 
+void USWeaponEffects::PlayMuzzleEffect() const
+{
+	if (MuzzleEffect)
+		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, WeaponActor->SkeletalMeshComp, WeaponActor->MuzzleSocketName);
+}
+
 void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 {
 	if (TracerEffect)
 	{
-		const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(MuzzleSocketName);
+		const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
 
 		UParticleSystemComponent* TraceParticlesComp =
             UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TracerEffect, MuzzleLocation);
 		TraceParticlesComp->SetVectorParameter(TraceTargetName, TraceEffectEnd);
 	}
-}
-
-void USWeaponEffects::PlayMuzzleEffect() const
-{
-	if (MuzzleEffect)
-		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, WeaponActor->SkeletalMeshComp, MuzzleSocketName);
 }
 
 void USWeaponEffects::PlayEffectsOnImpact(const FHitResult& HitResult) const
