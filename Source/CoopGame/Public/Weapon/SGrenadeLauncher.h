@@ -15,5 +15,5 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category=ProjectileParams)
 	TSubclassOf<ASGrenadeProjectile> ProjectileClass;
 
-	virtual void Shoot(const FVector& TraceStart, const FVector& TraceEnd, const FVector& ShotDirection) override;
+	// virtual void Shoot(const FVector& TraceStart, const FVector& TraceEnd, const FVector& ShotDirection) override;
 };
