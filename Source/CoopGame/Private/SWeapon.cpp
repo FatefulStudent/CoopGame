@@ -144,9 +144,14 @@ void ASWeapon::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) con
 
 void ASWeapon::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
 {
+	float DamageToApply = BaseDamage;
+
+	if (UGameplayStatics::GetSurfaceType(HitResult) == SURFACE_FLESH_VULNERABLE)
+		DamageToApply *= VulnerableFleshDamageMultiplier;
+	
 	UGameplayStatics::ApplyPointDamage(
         HitResult.GetActor(),
-        20.0,
+        DamageToApply,
         ShotDirection,
         HitResult, 
         GetInstigatorController(), 

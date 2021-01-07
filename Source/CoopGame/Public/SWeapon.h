@@ -19,6 +19,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
 	TSubclassOf<UDamageType> DamageType = UDamageType::StaticClass();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
+	float BaseDamage = 20.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
+	float VulnerableFleshDamageMultiplier = 2.0f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|CameraShake")
 	TSubclassOf<UCameraShake> CameraShakeClass = UCameraShake::StaticClass();
 	
