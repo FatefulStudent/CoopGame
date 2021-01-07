@@ -1,9 +1,11 @@
 #include "Weapon/SWeapon.h"
+#include "Weapon/Parts/SWeaponClip.h"
 #include "CoopGame/CoopGame.h"
 
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+
 
 static int32 DebugWeaponDrawing = 0;
 FAutoConsoleVariableRef CVARDebugWeaponDrawing(
@@ -19,6 +21,8 @@ ASWeapon::ASWeapon()
 
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;
+	
+	Clip = CreateDefaultSubobject<USWeaponClip>(TEXT("Clip"));
 }
 
 void ASWeapon::BeginPlay()
@@ -47,10 +51,20 @@ void ASWeapon::StopFiring()
 	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
 }
 
+void ASWeapon::Reload()
+{
+	Clip->Reload();
+}
+
 void ASWeapon::Fire()
 {
+	if (!Clip->HasBullets())
+	{
+		StopFiring();
+		return;
+	}
+	
 	// Trace the world from the owners eyes perspective
-
 	if (AActor* OwnerActor = GetOwner())
 	{
 		FVector TraceStart;
@@ -61,6 +75,7 @@ void ASWeapon::Fire()
 		const FVector TraceEnd = TraceStart + ShotDirection * 10000.0f;
 
 		Shoot(TraceStart, TraceEnd, ShotDirection);
+		Clip->SpendBullet();
 		LastFireTime = GetWorld()->GetTimeSeconds();
 	}
 }

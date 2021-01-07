@@ -68,6 +68,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::StartFiring);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ASCharacter::StopFiring);
+
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ASCharacter::Reload);
 }
 
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -116,6 +118,14 @@ void ASCharacter::StopFiring()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StopFiring();
+	}
+}
+
+void ASCharacter::Reload()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Reload();
 	}
 }
 

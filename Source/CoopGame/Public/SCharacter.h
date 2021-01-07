@@ -61,6 +61,7 @@ protected:
 
 	void StartFiring();
 	void StopFiring();
+	void Reload();
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);

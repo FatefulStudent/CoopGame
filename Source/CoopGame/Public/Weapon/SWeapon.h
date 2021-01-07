@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SWeapon.generated.h"
 
+class USWeaponClip;
 class USkeletalMeshComponent;
 class UDamageType;
 
@@ -15,6 +16,9 @@ class COOPGAME_API ASWeapon : public AActor
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Visual)
 	USkeletalMeshComponent* SkeletalMeshComp;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Parts)
+	USWeaponClip* Clip;
 
 	// RPM - bullets per minute fired  
 	UPROPERTY(EditDefaultsOnly, Category=Firing, meta=(ClampMin=1))
@@ -66,6 +70,7 @@ public:
 
 	void StartFiring();
 	void StopFiring();
+	void Reload();
 
 protected:
 	void Fire();
