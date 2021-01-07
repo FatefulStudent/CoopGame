@@ -35,12 +35,15 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category=Weapon)
 	FName WeaponSocketName = TEXT("WeaponSocket");
+
+	UPROPERTY(BlueprintReadOnly, Category=Health)
+	bool bDied = false;
 	
 	// whether we want to zoom or not
 	bool bWantsToZoom = false;
 	
 	// FOV cached from camera at BeginPlay
-	float DefaultFOV;
+	float DefaultFOV = 90.0f;
 
 	UPROPERTY()
 	ASWeapon* CurrentWeapon;
@@ -75,5 +78,9 @@ protected:
 	
 	void BeginZoom();
 	void EndZoom();
+
+	UFUNCTION()
+    void OnHealthChanged(USHealthComponent* _, int32 HealthDelta);
+	void KillCharacter();
 	
 };

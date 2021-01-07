@@ -22,7 +22,6 @@ ASCharacter::ASCharacter()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComp->SetupAttachment(SpringArmComp);
 
-
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WeaponTraceChannel, ECR_Ignore);	
@@ -46,6 +45,7 @@ void ASCharacter::BeginPlay()
 
 	DefaultFOV = CameraComp->FieldOfView;
 	CurrentWeapon->SetInstigator(this);
+	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 }
 
 void ASCharacter::Tick(float DeltaSeconds)
@@ -165,4 +165,24 @@ void ASCharacter::BeginZoom()
 void ASCharacter::EndZoom()
 {
 	bWantsToZoom = false;
+}
+
+void ASCharacter::OnHealthChanged(USHealthComponent* _, int32 HealthDelta)
+{
+	if (HealthComp->GetCurrentHealthPoints() <= 0 && !bDied)
+	{
+		// Die!
+		KillCharacter();
+	}
+}
+
+void ASCharacter::KillCharacter()
+{
+	if (!ensureAlways(!bDied))
+		return;
+
+	bDied = true;
+	GetMovementComponent()->StopMovementImmediately();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

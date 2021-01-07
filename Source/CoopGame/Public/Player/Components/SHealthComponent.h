@@ -11,20 +11,23 @@ class COOPGAME_API USHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+public:
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, USHealthComponent*, HealthComp, int32, HealthDelta);
+	UPROPERTY(BlueprintAssignable)
+	FOnHealthChangedSignature OnHealthChanged;
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Health)
 	int32 MaxHealthPoints = 100;
 
 	UPROPERTY(BlueprintReadOnly, Category=Health)
 	int32 CurrentHealthPoints = MaxHealthPoints;
-
-public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, USHealthComponent*, HealthComp, int32, HealthDelta);
-	UPROPERTY(BlueprintAssignable)
-	FOnHealthChangedSignature OnHealthChanged;
 	
 public:
 	USHealthComponent();
+	
+	int32 GetMaxHealthPoints() const;
+	int32 GetCurrentHealthPoints() const;
 
 protected:
 	virtual void BeginPlay() override;

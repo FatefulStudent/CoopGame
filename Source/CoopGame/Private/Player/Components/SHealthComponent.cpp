@@ -6,6 +6,15 @@ USHealthComponent::USHealthComponent()
 	
 }
 
+int32 USHealthComponent::GetMaxHealthPoints() const
+{
+	return MaxHealthPoints;
+}
+
+int32 USHealthComponent::GetCurrentHealthPoints() const
+{
+	return CurrentHealthPoints;
+}
 
 void USHealthComponent::BeginPlay()
 {
