@@ -21,6 +21,32 @@ ASWeapon::ASWeapon()
 	RootComponent = SkeletalMeshComp;
 }
 
+void ASWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+
+	TimeBetweenShots = 60.0f / RateOfFire;
+}
+
+void ASWeapon::StartFiring()
+{	
+	const float TimePassedSinceLastFire = GetWorld()->GetTimeSeconds() - LastFireTime; 
+	const float FirstDelay = FMath::Max(0.0f, TimeBetweenShots - TimePassedSinceLastFire);
+
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_TimeBetweenShots,
+		this, 
+		&ASWeapon::Fire,
+		TimeBetweenShots,
+		true,
+		FirstDelay);
+}
+
+void ASWeapon::StopFiring()
+{
+	GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
+}
+
 void ASWeapon::Fire()
 {
 	// Trace the world from the owners eyes perspective
@@ -35,6 +61,7 @@ void ASWeapon::Fire()
 		const FVector TraceEnd = TraceStart + ShotDirection * 10000.0f;
 		
 		Shoot(TraceStart, TraceEnd, ShotDirection);
+		LastFireTime = GetWorld()->GetTimeSeconds();
 	}
 }
 

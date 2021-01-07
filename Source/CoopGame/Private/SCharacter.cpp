@@ -66,7 +66,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ASCharacter::BeginZoom);
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
 
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::Fire);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::StartFiring);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ASCharacter::StopFiring);
 }
 
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -102,11 +103,19 @@ void ASCharacter::TickCamera(float DeltaSeconds)
 	CameraComp->SetFieldOfView(NewFOV);
 }
 
-void ASCharacter::Fire()
+void ASCharacter::StartFiring()
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->Fire();
+		CurrentWeapon->StartFiring();
+	}
+}
+
+void ASCharacter::StopFiring()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->StopFiring();
 	}
 }
 

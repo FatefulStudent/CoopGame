@@ -59,7 +59,8 @@ protected:
 	void SpawnWeapon();
 	void TickCamera(float DeltaSeconds);
 
-	void Fire();
+	void StartFiring();
+	void StopFiring();
 	
 	void MoveForward(float Value);
 	void MoveRight(float Value);

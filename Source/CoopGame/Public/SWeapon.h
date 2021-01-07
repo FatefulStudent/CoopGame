@@ -16,6 +16,10 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Visual)
 	USkeletalMeshComponent* SkeletalMeshComp;
 
+	// RPM - bullets per minute fired  
+	UPROPERTY(EditDefaultsOnly, Category=Firing, meta=(ClampMin=1))
+	float RateOfFire = 600.0f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Damage)
 	TSubclassOf<UDamageType> DamageType = UDamageType::StaticClass();
 
@@ -49,13 +53,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Effects|Trace")
 	FName TraceTargetName = TEXT("Target");
 
+private:
+	FTimerHandle TimerHandle_TimeBetweenShots;
+	float LastFireTime = -1.0f;
+
+	// Sets on BeginPlay, derives from RateOfFire
+	float TimeBetweenShots;
+
 public:	
 	ASWeapon();
+	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable, Category=Firing)
-	void Fire();
+	void StartFiring();
+	void StopFiring();
 
 protected:
+	void Fire();
 
 	virtual void Shoot(
 		const FVector& TraceStart,
