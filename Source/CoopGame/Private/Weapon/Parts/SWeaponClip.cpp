@@ -1,15 +1,9 @@
 #include "Weapon/Parts/SWeaponClip.h"
 
+
 USWeaponClip::USWeaponClip()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-}
-
-void USWeaponClip::BeginPlay()
-{
-	Super::BeginPlay();
-
-	BulletsInClip = ClipCapacity;
 }
 
 bool USWeaponClip::HasBullets() const
@@ -27,5 +21,12 @@ void USWeaponClip::SpendBullet()
 
 void USWeaponClip::Reload()
 {
+	BulletsInClip = ClipCapacity;
+}
+
+void USWeaponClip::BeginPlay()
+{
+	Super::BeginPlay();
+
 	BulletsInClip = ClipCapacity;
 }

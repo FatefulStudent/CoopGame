@@ -20,9 +20,10 @@ private:
 public:
 	USWeaponClip();
 
-	virtual void BeginPlay() override;
-
 	bool HasBullets() const;
 	void SpendBullet();
 	void Reload();
+	
+protected:
+	virtual void BeginPlay() override;
 };
