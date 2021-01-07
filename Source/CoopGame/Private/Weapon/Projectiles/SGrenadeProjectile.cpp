@@ -1,10 +1,10 @@
-#include "SProjectile.h"
+#include "Weapon/Projectiles/SGrenadeProjectile.h"
 
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-ASProjectile::ASProjectile() 
+ASGrenadeProjectile::ASGrenadeProjectile() 
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
@@ -15,7 +15,7 @@ ASProjectile::ASProjectile()
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
 	CollisionComp->SetCollisionProfileName("Projectile");
-	CollisionComp->OnComponentHit.AddDynamic(this, &ASProjectile::OnHit);	// set up a notification for when this component hits something blocking
+	CollisionComp->OnComponentHit.AddDynamic(this, &ASGrenadeProjectile::OnHit);	// set up a notification for when this component hits something blocking
 
 	// Players can't walk on it
 	CollisionComp->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
@@ -33,18 +33,18 @@ ASProjectile::ASProjectile()
 	ProjectileMovement->bShouldBounce = true;
 }
 
-void ASProjectile::BeginPlay()
+void ASGrenadeProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
 	if (HasAuthority())
 	{
 		FTimerHandle ExplodeTimerHandle;
-		GetWorldTimerManager().SetTimer(ExplodeTimerHandle, this, &ASProjectile::ExplodeWithEffects, 1.0f);
+		GetWorldTimerManager().SetTimer(ExplodeTimerHandle, this, &ASGrenadeProjectile::ExplodeWithEffects, 1.0f);
 	}
 }
 
-void ASProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void ASGrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {	
 	if (HasAuthority())
 	{
@@ -52,19 +52,19 @@ void ASProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrim
 	}
 }
 
-void ASProjectile::ExplodeWithEffects()
+void ASGrenadeProjectile::ExplodeWithEffects()
 {
 	PlayExplosionEffects();
 	Explode();
 }
 
-void ASProjectile::PlayExplosionEffects() const
+void ASGrenadeProjectile::PlayExplosionEffects() const
 {
 	if (ExplosionEffect)
 		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
 }
 
-void ASProjectile::Explode()
+void ASGrenadeProjectile::Explode()
 {
 	TArray<AActor*> IgnoredActors;
 	IgnoredActors.Add(this);

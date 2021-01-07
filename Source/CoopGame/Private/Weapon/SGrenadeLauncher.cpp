@@ -1,6 +1,4 @@
-#include "SGrenadeLauncher.h"
-
-
+#include "Weapon/SGrenadeLauncher.h"
 
 void ASGrenadeLauncher::Shoot(const FVector& TraceStart, const FVector& TraceEnd, const FVector& ShotDirection)
 {
@@ -20,7 +18,7 @@ void ASGrenadeLauncher::Shoot(const FVector& TraceStart, const FVector& TraceEnd
 		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		// spawn the projectile at the muzzle
-		GetWorld()->SpawnActor<ASProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParameters);
+		GetWorld()->SpawnActor<ASGrenadeProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParameters);
 	}
 	
 	PlayMuzzleEffect();

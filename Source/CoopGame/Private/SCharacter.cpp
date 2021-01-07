@@ -1,5 +1,5 @@
 #include "SCharacter.h"
-#include "SWeapon.h"
+#include "Weapon/SWeapon.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PawnMovementComponent.h"

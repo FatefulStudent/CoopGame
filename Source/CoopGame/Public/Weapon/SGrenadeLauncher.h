@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "SWeapon.h"
-#include "SProjectile.h"
+#include "Projectiles/SGrenadeProjectile.h"
 
 #include "SGrenadeLauncher.generated.h"
 
@@ -13,7 +13,7 @@ class COOPGAME_API ASGrenadeLauncher : public ASWeapon
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category=ProjectileParams)
-	TSubclassOf<ASProjectile> ProjectileClass;
+	TSubclassOf<ASGrenadeProjectile> ProjectileClass;
 
 	virtual void Shoot(const FVector& TraceStart, const FVector& TraceEnd, const FVector& ShotDirection) override;
 };

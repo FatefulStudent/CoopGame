@@ -1,4 +1,4 @@
-#include "SWeapon.h"
+#include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
 
 #include "DrawDebugHelpers.h"
@@ -6,7 +6,7 @@
 #include "Particles/ParticleSystemComponent.h"
 
 static int32 DebugWeaponDrawing = 0;
-FAutoConsoleVariableRef CVARDebugWeaponDrawing (
+FAutoConsoleVariableRef CVARDebugWeaponDrawing(
 	TEXT("COOP.DebugWeapons"),
 	DebugWeaponDrawing,
 	TEXT("Draw debug lines when firing hitscan weapon"),
@@ -16,7 +16,7 @@ FAutoConsoleVariableRef CVARDebugWeaponDrawing (
 ASWeapon::ASWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	
+
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;
 }
@@ -29,13 +29,13 @@ void ASWeapon::BeginPlay()
 }
 
 void ASWeapon::StartFiring()
-{	
-	const float TimePassedSinceLastFire = GetWorld()->GetTimeSeconds() - LastFireTime; 
+{
+	const float TimePassedSinceLastFire = GetWorld()->GetTimeSeconds() - LastFireTime;
 	const float FirstDelay = FMath::Max(0.0f, TimeBetweenShots - TimePassedSinceLastFire);
 
 	GetWorldTimerManager().SetTimer(
 		TimerHandle_TimeBetweenShots,
-		this, 
+		this,
 		&ASWeapon::Fire,
 		TimeBetweenShots,
 		true,
@@ -59,7 +59,7 @@ void ASWeapon::Fire()
 
 		const FVector ShotDirection = EyeRotation.Vector();
 		const FVector TraceEnd = TraceStart + ShotDirection * 10000.0f;
-		
+
 		Shoot(TraceStart, TraceEnd, ShotDirection);
 		LastFireTime = GetWorld()->GetTimeSeconds();
 	}
@@ -83,7 +83,7 @@ void ASWeapon::Shoot(
 		TraceEnd,
 		COLLISION_WEAPON,
 		CollisionQueryParams);
-	
+
 	if (bBlockingHit)
 	{
 		if (HasAuthority())
@@ -113,7 +113,6 @@ void ASWeapon::PlayFireEffects(const FVector& TraceEffectEnd) const
 	PlayCameraShake();
 	PlayTraceEffect(TraceEffectEnd);
 	PlayMuzzleEffect();
-	
 }
 
 void ASWeapon::PlayTraceEffect(const FVector& TraceEffectEnd) const
@@ -139,7 +138,7 @@ void ASWeapon::PlayEffectsOnImpact(const FHitResult& HitResult) const
 	const EPhysicalSurface HitSurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
 
 	UParticleSystem* ImpactEffect = nullptr;
-	
+
 	switch (HitSurfaceType)
 	{
 	case SURFACE_FLESH_DEFAULT:
@@ -161,7 +160,6 @@ void ASWeapon::PlayEffectsOnImpact(const FHitResult& HitResult) const
 			HitResult.ImpactPoint,
 			HitResult.ImpactNormal.Rotation());
 	}
-	
 }
 
 void ASWeapon::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
@@ -175,13 +173,13 @@ void ASWeapon::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FH
 
 	if (UGameplayStatics::GetSurfaceType(HitResult) == SURFACE_FLESH_VULNERABLE)
 		DamageToApply *= VulnerableFleshDamageMultiplier;
-	
+
 	UGameplayStatics::ApplyPointDamage(
-        HitResult.GetActor(),
-        DamageToApply,
-        ShotDirection,
-        HitResult, 
-        GetInstigatorController(), 
-        this,
-        DamageType);
+		HitResult.GetActor(),
+		DamageToApply,
+		ShotDirection,
+		HitResult,
+		GetInstigatorController(),
+		this,
+		DamageType);
 }

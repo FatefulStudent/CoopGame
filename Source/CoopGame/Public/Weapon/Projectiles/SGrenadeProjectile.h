@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SProjectile.generated.h"
+#include "SGrenadeProjectile.generated.h"
 
 class USphereComponent;
 class UProjectileMovementComponent;
 
 UCLASS()
-class COOPGAME_API ASProjectile : public AActor
+class COOPGAME_API ASGrenadeProjectile : public AActor
 {
 	GENERATED_BODY()
 
@@ -36,7 +36,7 @@ protected:
 
 
 public:
-	ASProjectile();
+	ASGrenadeProjectile();
 
 	virtual void BeginPlay() override;
 	/** called when projectile hits something */
