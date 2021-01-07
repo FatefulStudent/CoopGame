@@ -83,7 +83,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (CurrentWeapon)
-		CurrentWeapon->MarkPendingKill();
+		CurrentWeapon->Destroy();
 }
 
 void ASCharacter::SpawnWeapon()
@@ -182,7 +182,12 @@ void ASCharacter::KillCharacter()
 		return;
 
 	bDied = true;
+	
 	GetMovementComponent()->StopMovementImmediately();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	DetachFromControllerPendingDestroy();
+
+	SetLifeSpan(10.0f);
 }
