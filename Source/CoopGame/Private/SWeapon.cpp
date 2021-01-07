@@ -54,7 +54,7 @@ void ASWeapon::Shoot(
 		HitResult,
 		TraceStart,
 		TraceEnd,
-		ECC_Visibility,
+		COLLISION_WEAPON,
 		CollisionQueryParams);
 	
 	if (bBlockingHit)
