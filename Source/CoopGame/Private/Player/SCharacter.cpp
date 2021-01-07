@@ -1,9 +1,13 @@
-#include "SCharacter.h"
+#include "Player/SCharacter.h"
 #include "Weapon/SWeapon.h"
 
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "CoopGame/CoopGame.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Player/Components/SHealthComponent.h"
+
 
 ASCharacter::ASCharacter()
 {
@@ -18,6 +22,10 @@ ASCharacter::ASCharacter()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComp->SetupAttachment(SpringArmComp);
 
+
+	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
+	
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WeaponTraceChannel, ECR_Ignore);	
 }
 
 FVector ASCharacter::GetPawnViewLocation() const

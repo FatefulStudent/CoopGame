@@ -4,6 +4,7 @@
 
 #include "SCharacter.generated.h"
 
+class USHealthComponent;
 class ASWeapon;
 class UCameraComponent;
 class USpringArmComponent;
@@ -19,6 +20,9 @@ protected:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Camera)
 	USpringArmComponent* SpringArmComp;
+	
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category=Health)
+	USHealthComponent* HealthComp;
 
 	UPROPERTY(EditDefaultsOnly, Category=Zoom, meta = (ClampMin = 0.01, ClampMax = 180.0f))
 	float ZoomedFOV = 65.0f;
