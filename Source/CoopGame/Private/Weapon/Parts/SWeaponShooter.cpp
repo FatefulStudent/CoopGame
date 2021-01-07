@@ -142,7 +142,7 @@ bool USWeaponShooter::PerformLineTrace(const FVector& TraceStart, const FVector&
         HitResult,
         TraceStart,
         TraceEnd,
-        COLLISION_WEAPON,
+        ECC_WeaponTraceChannel,
         CollisionQueryParams);
 }
 
