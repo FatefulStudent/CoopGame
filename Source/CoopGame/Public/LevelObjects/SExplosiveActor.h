@@ -30,7 +30,7 @@ protected:
 	USHealthComponent* HealthComp;
 
 private:
-	bool bDied = false;
+	bool bExploded = false;
 	
 public:
 	ASExplosiveActor();
