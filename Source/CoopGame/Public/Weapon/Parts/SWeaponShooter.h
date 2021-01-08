@@ -9,7 +9,7 @@ class USWeaponClip;
 class USWeaponEffects;
 class ASWeapon;
 
-UCLASS( ClassGroup=(WeaponParts) )
+UCLASS( ClassGroup=(WeaponParts), meta=(ChildCannotTick) )
 class COOPGAME_API USWeaponShooter : public UActorComponent
 {
 	GENERATED_BODY()

@@ -5,7 +5,7 @@
 #include "SWeaponClip.generated.h"
 
 
-UCLASS( ClassGroup=(WeaponParts) )
+UCLASS( ClassGroup=(WeaponParts), meta=(ChildCannotTick) )
 class COOPGAME_API USWeaponClip : public UActorComponent
 {
 	GENERATED_BODY()

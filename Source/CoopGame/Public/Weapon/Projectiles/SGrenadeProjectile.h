@@ -7,7 +7,7 @@
 class USphereComponent;
 class UProjectileMovementComponent;
 
-UCLASS()
+UCLASS(meta=(ChildCannotTick))
 class COOPGAME_API ASGrenadeProjectile : public AActor
 {
 	GENERATED_BODY()

@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "SHealthComponent.generated.h"
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(CommonComponents), meta=(ChildCannotTick) )
 class COOPGAME_API USHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()

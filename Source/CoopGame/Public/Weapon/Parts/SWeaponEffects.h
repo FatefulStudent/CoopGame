@@ -7,7 +7,7 @@
 #include "SWeaponEffects.generated.h"
 
 
-UCLASS( ClassGroup=(WeaponParts) )
+UCLASS( ClassGroup=(WeaponParts), meta=(ChildCannotTick) )
 class COOPGAME_API USWeaponEffects : public UActorComponent
 {
 	GENERATED_BODY()

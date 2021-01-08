@@ -3,7 +3,7 @@
 
 USHealthComponent::USHealthComponent()
 {
-	
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
 int32 USHealthComponent::GetMaxHealthPoints() const

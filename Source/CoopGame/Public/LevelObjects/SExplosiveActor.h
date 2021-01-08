@@ -8,7 +8,7 @@
 
 class URadialForceComponent;
 class USHealthComponent;
-UCLASS()
+UCLASS( ClassGroup=(LevelObjects), meta=(ChildCannotTick) )
 class COOPGAME_API ASExplosiveActor : public AActor
 {
 	GENERATED_BODY()
