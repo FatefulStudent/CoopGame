@@ -12,6 +12,8 @@ ASWeapon::ASWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	SetReplicates(true);
+	NetUpdateFrequency = 64.0f;
+	MinNetUpdateFrequency = 32.0f;
 
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;

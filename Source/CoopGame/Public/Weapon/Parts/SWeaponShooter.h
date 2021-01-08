@@ -22,9 +22,6 @@ struct FShootResult
 
 	UPROPERTY()
 	FVector_NetQuantize TraceEnd { ForceInitToZero };
-	
-	UPROPERTY()
-	FVector_NetQuantizeNormal HitNormal = FVector::UpVector;
 
 	UPROPERTY()
 	TEnumAsByte<EPhysicalSurface> HitSurface = SurfaceType_Default;

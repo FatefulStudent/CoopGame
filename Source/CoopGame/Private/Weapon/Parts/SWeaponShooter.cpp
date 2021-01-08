@@ -120,7 +120,6 @@ void USWeaponShooter::ShootHitScan()
 	const bool bBlockingHit = PerformLineTrace(TraceStart, TraceEnd, HitResult);
 
 	FVector TraceEffectEnd = TraceEnd;
-	FVector HitNormal = FVector::UpVector;
 	
 	if (bBlockingHit)
 	{
@@ -128,7 +127,6 @@ void USWeaponShooter::ShootHitScan()
 			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
 		TraceEffectEnd = HitResult.ImpactPoint;
-		HitNormal = HitResult.ImpactNormal;
 	}
 
 	ShootResult = FShootResult
@@ -136,7 +134,6 @@ void USWeaponShooter::ShootHitScan()
 		true,
 	    bBlockingHit,
 	    TraceEffectEnd,
-		HitNormal,
 	    UGameplayStatics::GetSurfaceType(HitResult)
 	};
 
@@ -196,9 +193,11 @@ void USWeaponShooter::PlayHitScanSpecificEffects() const
 	if (ShootResult.bHitScan)
 	{
 		WeaponEffects->PlayTraceEffect(ShootResult.TraceEnd);
-			
+
+		const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
+		const FVector ShotDirection = MuzzleLocation - ShootResult.TraceEnd;
 		if (ShootResult.bBlockingHit)
-			WeaponEffects->PlayEffectsOnImpact(ShootResult.TraceEnd, ShootResult.HitSurface, ShootResult.HitNormal);
+			WeaponEffects->PlayEffectsOnImpact(ShootResult.TraceEnd, ShootResult.HitSurface, ShotDirection);
 	}
 }
 

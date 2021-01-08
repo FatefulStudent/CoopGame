@@ -53,7 +53,8 @@ void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 	}
 }
 
-void USWeaponEffects::PlayEffectsOnImpact(const FVector& ImpactPoint, const EPhysicalSurface HitSurfaceType, const FVector& HitNormal) const
+void USWeaponEffects::PlayEffectsOnImpact(const FVector& ImpactPoint, const EPhysicalSurface HitSurfaceType,
+	const FVector& ShotDirection) const
 {
 	check(FNetworkHelper::HasCosmetics(this));
 
@@ -78,7 +79,7 @@ void USWeaponEffects::PlayEffectsOnImpact(const FVector& ImpactPoint, const EPhy
             this,
             ImpactEffect,
             ImpactPoint,
-            HitNormal.Rotation());
+            ShotDirection.Rotation());
 	}
 }
 
