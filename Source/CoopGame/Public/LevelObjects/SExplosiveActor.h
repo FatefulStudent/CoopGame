@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "SExplosiveActor.generated.h"
 
+class URadialForceComponent;
 class USHealthComponent;
 UCLASS()
 class COOPGAME_API ASExplosiveActor : public AActor
@@ -16,7 +17,10 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	UStaticMeshComponent* StaticMesh;
 	
-	UPROPERTY(EditDefaultsOnly, Category=Mesh)
+	UPROPERTY(VisibleDefaultsOnly, Category=Explosion)
+	URadialForceComponent* RadialForceComp;
+	
+	UPROPERTY(EditDefaultsOnly, Category=Explosion)
 	UMaterial* ExplodedMaterial;
 	
 	UPROPERTY(EditDefaultsOnly, Category=Explosion)
@@ -37,7 +41,10 @@ protected:
 private:
 	UFUNCTION()
 	void OnHealthChanged(USHealthComponent* _, int32 HealthDelta);
-	void PlayCosmeticExplosionEffects();
 
 	void Explode();
+
+	void PlayCosmeticExplosionEffects() const;
+
+	
 };

@@ -4,6 +4,7 @@
 #include "CoopGame/CoopGame.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "PhysicsEngine/RadialForceComponent.h"
 #include "Player/Components/SHealthComponent.h"
 
 
@@ -23,6 +24,11 @@ ASExplosiveActor::ASExplosiveActor()
 	StaticMesh->SetCollisionResponseToChannel(ECC_Destructible, ECR_Block);
 	StaticMesh->SetCollisionResponseToChannel(ECC_WeaponTraceChannel, ECR_Block);
 	RootComponent = StaticMesh;
+
+	RadialForceComp = CreateDefaultSubobject<URadialForceComponent>(TEXT("ExplosionRadialForce"));
+	RadialForceComp->SetupAttachment(RootComponent);
+	RadialForceComp->Radius = 1000.0f;
+	RadialForceComp->ImpulseStrength = 10000.0f;
 	
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 }
@@ -45,7 +51,19 @@ void ASExplosiveActor::OnHealthChanged(USHealthComponent* _, int32 HealthDelta)
 	}
 }
 
-void ASExplosiveActor::PlayCosmeticExplosionEffects()
+void ASExplosiveActor::Explode()
+{
+	if (!ensureAlways(!bDied))
+		return;
+
+	RadialForceComp->FireImpulse();
+	
+	PlayCosmeticExplosionEffects();
+
+	UE_LOG(LogTemp, Warning, TEXT("%s: Exploded!"));
+}
+
+void ASExplosiveActor::PlayCosmeticExplosionEffects() const
 {
 	if (ExplodedMaterial)
 	{
@@ -57,14 +75,4 @@ void ASExplosiveActor::PlayCosmeticExplosionEffects()
 		const FRotator RandRotator = UKismetMathLibrary::RandomRotator(false);
 		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation(), RandRotator);
 	}
-}
-
-void ASExplosiveActor::Explode()
-{
-	if (!ensureAlways(!bDied))
-		return;
-
-	PlayCosmeticExplosionEffects();
-
-	UE_LOG(LogTemp, Warning, TEXT("%s: Exploded!"));
 }
