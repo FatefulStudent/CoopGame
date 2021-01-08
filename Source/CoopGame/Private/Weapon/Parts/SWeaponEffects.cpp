@@ -24,10 +24,13 @@ void USWeaponEffects::BeginPlay()
 void USWeaponEffects::PlayCameraShake() const
 {
 	check(FNetworkHelper::HasCosmetics(this));
-	
-	if (APlayerController* InstigatorPlayerController = Cast<APlayerController>(WeaponActor->GetInstigatorController()))
+
+	if (WeaponActor)
 	{
-		InstigatorPlayerController->ClientPlayCameraShake(CameraShakeClass);
+		if (APlayerController* InstigatorPlayerController = Cast<APlayerController>(WeaponActor->GetInstigatorController()))
+		{
+			InstigatorPlayerController->ClientPlayCameraShake(CameraShakeClass);
+		}
 	}
 }
 
@@ -35,7 +38,7 @@ void USWeaponEffects::PlayMuzzleEffect() const
 {
 	check(FNetworkHelper::HasCosmetics(this));
 	
-	if (MuzzleEffect)
+	if (MuzzleEffect && WeaponActor)
 		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, WeaponActor->SkeletalMeshComp, WeaponActor->MuzzleSocketName);
 }
 
@@ -43,7 +46,7 @@ void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 {
 	check(FNetworkHelper::HasCosmetics(this));
 	
-	if (TracerEffect)
+	if (TracerEffect && WeaponActor)
 	{
 		const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
 

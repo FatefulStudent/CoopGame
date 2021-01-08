@@ -178,7 +178,7 @@ void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, c
 
 void USWeaponShooter::OnRep_ShootResult() const
 {
-	if (FNetworkHelper::HasCosmetics(this))
+	if (FNetworkHelper::HasCosmetics(this) && WeaponActor)
 	{
 		PlayHitScanSpecificEffects();
 
