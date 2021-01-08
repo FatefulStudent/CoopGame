@@ -1,4 +1,5 @@
 #include "Player/SCharacter.h"
+#include "Helpers/NetworkHelper.h"
 #include "Player/Components/SHealthComponent.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
@@ -42,7 +43,7 @@ void ASCharacter::BeginPlay()
 	DefaultFOV = CameraComp->FieldOfView;
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
 
-	if (HasAuthority())
+	if (FNetworkHelper::HasAuthority(this))
 		SpawnWeapon();
 }
 
@@ -80,7 +81,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (HasAuthority())
+	if (FNetworkHelper::HasAuthority(this))
 	{
 		if (CurrentWeapon)
 			CurrentWeapon->Destroy();
@@ -97,7 +98,8 @@ void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 
 void ASCharacter::SpawnWeapon()
 {
-	check(HasAuthority());
+	check(FNetworkHelper::HasAuthority(this));
+	
 	FActorSpawnParameters WeaponSpawnParams;
 	WeaponSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	WeaponSpawnParams.Instigator = this;
@@ -182,14 +184,14 @@ void ASCharacter::OnHealthChanged(USHealthComponent* _, int32 HealthDelta)
 	if (HealthComp->GetCurrentHealthPoints() <= 0 && !bDied)
 	{
 		// Die!
-		if (HasAuthority())
+		if (FNetworkHelper::HasAuthority(this))
 			KillCharacter();
 	}
 }
 
 void ASCharacter::KillCharacter()
 {
-	check(HasAuthority());
+	check(FNetworkHelper::HasAuthority(this));
 	
 	if (!ensureAlways(!bDied))
 		return;

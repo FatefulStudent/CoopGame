@@ -4,6 +4,7 @@
 #include "Weapon/Projectiles/SGrenadeProjectile.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
+#include "Helpers/NetworkHelper.h"
 
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -117,7 +118,7 @@ void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
 
 	if (bBlockingHit)
 	{
-		if (WeaponActor->HasAuthority())
+		if (FNetworkHelper::HasAuthority(this))
 			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
 		TraceEffectEnd = HitResult.ImpactPoint;

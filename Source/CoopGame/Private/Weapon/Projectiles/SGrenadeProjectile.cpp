@@ -1,4 +1,5 @@
 #include "Weapon/Projectiles/SGrenadeProjectile.h"
+#include "Helpers/NetworkHelper.h"
 
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
@@ -37,7 +38,7 @@ void ASGrenadeProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority())
+	if (FNetworkHelper::HasAuthority(this))
 	{
 		FTimerHandle ExplodeTimerHandle;
 		GetWorldTimerManager().SetTimer(ExplodeTimerHandle, this, &ASGrenadeProjectile::ExplodeWithEffects, 1.0f);
@@ -46,7 +47,7 @@ void ASGrenadeProjectile::BeginPlay()
 
 void ASGrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {	
-	if (HasAuthority())
+	if (FNetworkHelper::HasAuthority(this))
 	{
 		ExplodeWithEffects();
 	}
@@ -60,12 +61,15 @@ void ASGrenadeProjectile::ExplodeWithEffects()
 
 void ASGrenadeProjectile::PlayExplosionEffects() const
 {
+	check(FNetworkHelper::HasCosmetics(this));
 	if (ExplosionEffect)
 		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
 }
 
 void ASGrenadeProjectile::Explode()
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	TArray<AActor*> IgnoredActors;
 	IgnoredActors.Add(this);
 	IgnoredActors.Add(GetOwner());
