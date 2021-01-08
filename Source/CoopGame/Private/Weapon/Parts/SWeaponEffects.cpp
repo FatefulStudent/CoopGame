@@ -1,13 +1,14 @@
 ﻿#include "Weapon/Parts/SWeaponEffects.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
+#include "Helpers/NetworkHelper.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
 USWeaponEffects::USWeaponEffects()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
 void USWeaponEffects::BeginPlay()
@@ -22,6 +23,8 @@ void USWeaponEffects::BeginPlay()
 
 void USWeaponEffects::PlayCameraShake() const
 {
+	check(FNetworkHelper::HasCosmetics(this));
+	
 	if (APlayerController* InstigatorPlayerController = Cast<APlayerController>(WeaponActor->GetInstigatorController()))
 	{
 		InstigatorPlayerController->ClientPlayCameraShake(CameraShakeClass);
@@ -30,12 +33,16 @@ void USWeaponEffects::PlayCameraShake() const
 
 void USWeaponEffects::PlayMuzzleEffect() const
 {
+	check(FNetworkHelper::HasCosmetics(this));
+	
 	if (MuzzleEffect)
 		UGameplayStatics::SpawnEmitterAttached(MuzzleEffect, WeaponActor->SkeletalMeshComp, WeaponActor->MuzzleSocketName);
 }
 
 void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 {
+	check(FNetworkHelper::HasCosmetics(this));
+	
 	if (TracerEffect)
 	{
 		const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
@@ -48,6 +55,8 @@ void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 
 void USWeaponEffects::PlayEffectsOnImpact(const FHitResult& HitResult) const
 {
+	check(FNetworkHelper::HasCosmetics(this));
+	
 	const EPhysicalSurface HitSurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
 
 	UParticleSystem* ImpactEffect = nullptr;

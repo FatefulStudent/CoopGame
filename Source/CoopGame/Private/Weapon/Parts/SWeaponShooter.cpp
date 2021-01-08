@@ -32,7 +32,7 @@ namespace WeaponShooterLocal
 USWeaponShooter::USWeaponShooter()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
+	SetIsReplicatedByDefault(true);
 }
 
 void USWeaponShooter::InitConstructor(USWeaponClip* InClip, USWeaponEffects* InWeaponEffects)
@@ -45,9 +45,12 @@ void USWeaponShooter::Fire()
 {
 	if (!ensureAlways(Clip->HasBullets()))
 		return;
-	
-	WeaponEffects->PlayCameraShake();
-	WeaponEffects->PlayMuzzleEffect();
+
+	if (FNetworkHelper::HasCosmetics(this))
+	{
+		WeaponEffects->PlayCameraShake();
+		WeaponEffects->PlayMuzzleEffect();
+	}
 	
 	if (bShootProjectiles)
 		ShootProjectile();
@@ -72,7 +75,7 @@ void USWeaponShooter::ShootProjectile()
 {
 	APawn* PawnActor = Cast<APawn>(WeaponActor->GetOwner());
 	// try and fire a projectile
-	if (ProjectileClass && PawnActor)
+	if (ProjectileClass && PawnActor && FNetworkHelper::HasAuthority(this))
 	{
 		SpawnProjectileAtMuzzle(PawnActor);
 	}
@@ -80,6 +83,8 @@ void USWeaponShooter::ShootProjectile()
 
 void USWeaponShooter::SpawnProjectileAtMuzzle(APawn* PawnActor) const
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	// Grabs location from the mesh that must have a socket called "Muzzle" in his skeleton
 	const FVector MuzzleLocation = WeaponActor->SkeletalMeshComp->GetSocketLocation(WeaponActor->MuzzleSocketName);
 	// Use controller rotation which is our view direction in first person
@@ -99,12 +104,13 @@ void USWeaponShooter::ShootHitScan()
 {
 	FVector TraceEffectEnd;
 	PerformHitScanShot(TraceEffectEnd);
-	
-	WeaponEffects->PlayTraceEffect(TraceEffectEnd);
+
+	if (FNetworkHelper::HasCosmetics(this))
+		WeaponEffects->PlayTraceEffect(TraceEffectEnd);
 }
 
 void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
-{
+{	
 	// Trace the world from the owners eyes perspective
 	APawn* InstigatorActor = WeaponActor->GetInstigator();
 	if (!InstigatorActor)
@@ -122,12 +128,13 @@ void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
 			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
 		TraceEffectEnd = HitResult.ImpactPoint;
-		WeaponEffects->PlayEffectsOnImpact(HitResult);
+		if (FNetworkHelper::HasCosmetics(this))
+			WeaponEffects->PlayEffectsOnImpact(HitResult);
 	}
 	else
 		TraceEffectEnd = TraceEnd;
 
-	if (DebugWeaponDrawing > 0)
+	if (DebugWeaponDrawing > 0 && FNetworkHelper::HasCosmetics(this))
 		DrawDebug(TraceStart, TraceEnd);
 }
 
@@ -149,6 +156,7 @@ bool USWeaponShooter::PerformLineTrace(const FVector& TraceStart, const FVector&
 
 void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
 {
+	check(FNetworkHelper::HasAuthority(this));
 	float DamageToApply = BaseDamage;
 
 	if (UGameplayStatics::GetSurfaceType(HitResult) == SURFACE_FLESH_VULNERABLE)
