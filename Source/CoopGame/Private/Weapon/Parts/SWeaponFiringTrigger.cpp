@@ -2,6 +2,7 @@
 #include "Weapon/Parts/SWeaponClip.h"
 #include "Weapon/Parts/SWeaponShooter.h"
 #include "Weapon/SWeapon.h"
+#include "Helpers/NetworkHelper.h"
 
 #define SECONDS_IN_MINUTE 60.0f
 
@@ -18,6 +19,8 @@ void USWeaponFiringTrigger::InitConstructor(USWeaponShooter* InShooter, USWeapon
 
 void USWeaponFiringTrigger::StartFiring()
 {
+	check (FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this));
+		
 	const float TimePassedSinceLastFire = GetWorld()->GetTimeSeconds() - LastFireTime;
 	const float FirstDelay = FMath::Max(0.0f, TimeBetweenShots - TimePassedSinceLastFire);
 
@@ -35,6 +38,8 @@ void USWeaponFiringTrigger::StartFiring()
 
 void USWeaponFiringTrigger::AttemptToFire()
 {
+	check (FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this));
+	
 	if (Clip->HasBullets())
 	{
 		Shooter->Fire();
@@ -48,6 +53,8 @@ void USWeaponFiringTrigger::AttemptToFire()
 
 void USWeaponFiringTrigger::StopFiring()
 {
+	check (FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this));
+	
 	if (IsValid(WeaponActor))
 	{
 		WeaponActor->GetWorldTimerManager().ClearTimer(TimerHandle_TimeBetweenShots);
@@ -61,7 +68,8 @@ void USWeaponFiringTrigger::BeginPlay()
 	TimeBetweenShots = SECONDS_IN_MINUTE / RateOfFire;
 	WeaponActor = Cast<ASWeapon>(GetOwner());
 
-	if (Shooter)
+	if (Shooter &&
+		(FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this)))
 	{
 		Shooter->OnFired.AddUObject(this, &USWeaponFiringTrigger::OnWeaponFired);
 	}

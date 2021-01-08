@@ -44,7 +44,7 @@ public:
 	void PlayCameraShake() const;
 	void PlayMuzzleEffect() const;
 	void PlayTraceEffect(const FVector& TraceEffectEnd) const;
-	void PlayEffectsOnImpact(const FHitResult& HitResult) const;
+	void PlayEffectsOnImpact(const FVector& ImpactPoint, const EPhysicalSurface HitSurfaceType, const FVector& HitNormal) const;
 
 protected:
 	virtual void BeginPlay() override;
