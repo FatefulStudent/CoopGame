@@ -1,9 +1,13 @@
 ﻿#include "Player/Components/SHealthComponent.h"
+#include "Helpers/NetworkHelper.h"
+
+#include "Net/UnrealNetwork.h"
 
 
 USHealthComponent::USHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 }
 
 int32 USHealthComponent::GetMaxHealthPoints() const
@@ -22,21 +26,40 @@ void USHealthComponent::BeginPlay()
 
 	CurrentHealthPoints = MaxHealthPoints;
 
-	if (AActor* Owner = GetOwner())
+	if (FNetworkHelper::HasAuthority(this))
 	{
-		Owner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::OnOwnerTakeDamage);
+		if (AActor* Owner = GetOwner())
+		{
+			Owner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::OnOwnerTakeDamage);
+		}
 	}
 }
 
-void USHealthComponent::OnOwnerTakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-	AController* InstigatedBy, AActor* DamageCauser)
+void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(USHealthComponent, CurrentHealthPoints);
+}
+
+void USHealthComponent::OnOwnerTakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+                                          AController* InstigatedBy, AActor* DamageCauser)
+{
+	check(FNetworkHelper::HasAuthority(this));
+	
 	if (Damage <= 0.0f)
 		return;
 
-	CurrentHealthPoints -= Damage;
+	const int32 HealthPointsDelta = -Damage;
+	CurrentHealthPoints += HealthPointsDelta;
 	UE_LOG(LogTemp, Log, TEXT("%s was damaged by %s. Remaining health: %d"),
 		*GetName(), *FString::SanitizeFloat(Damage), CurrentHealthPoints);
 
-	OnHealthChanged.Broadcast(this, Damage);
+	OnHealthChanged.Broadcast(this, HealthPointsDelta);
+}
+
+void USHealthComponent::OnRep_CurrentHealthPoints(int32 PreviousHealthPointsValue)
+{
+	const int32 HealthPointsDelta = CurrentHealthPoints - PreviousHealthPointsValue;
+	OnHealthChanged.Broadcast(this, HealthPointsDelta);
 }

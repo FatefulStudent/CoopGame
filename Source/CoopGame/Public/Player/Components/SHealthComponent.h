@@ -1,6 +1,4 @@
-﻿// 
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -20,7 +18,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Health)
 	int32 MaxHealthPoints = 100;
 
-	UPROPERTY(BlueprintReadOnly, Category=Health)
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_CurrentHealthPoints, Category=Health)
 	int32 CurrentHealthPoints = MaxHealthPoints;
 	
 public:
@@ -31,8 +29,12 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
 
 	UFUNCTION()
 	void OnOwnerTakeDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* InstigatedBy, AActor* DamageCauser);
+
+	UFUNCTION()
+	void OnRep_CurrentHealthPoints(int32 PreviousHealthPointsValue);
 };
