@@ -1,16 +1,18 @@
 ﻿#include "LevelObjects/SExplosiveActor.h"
+#include "Helpers/NetworkHelper.h"
+#include "Player/Components/SHealthComponent.h"
 
-
-#include "CoopGame/CoopGame.h"
+#include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "PhysicsEngine/RadialForceComponent.h"
-#include "Player/Components/SHealthComponent.h"
 
 
 ASExplosiveActor::ASExplosiveActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	SetReplicates(true);
+	SetReplicatingMovement(true);
 
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	StaticMesh->SetCollisionObjectType(ECC_Destructible);
@@ -21,6 +23,7 @@ ASExplosiveActor::ASExplosiveActor()
 	RadialForceComp->ImpulseStrength = 500.0f;
 	RadialForceComp->bImpulseVelChange = true;
 	RadialForceComp->bAutoActivate = false;
+	RadialForceComp->bIgnoreOwningActor = true;
 	RadialForceComp->SetupAttachment(RootComponent);
 
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
@@ -31,33 +34,57 @@ void ASExplosiveActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HealthComp->OnHealthChanged.AddDynamic(this, &ASExplosiveActor::OnHealthChanged);
+	if (FNetworkHelper::HasAuthority(this))
+	{
+		HealthComp->OnHealthChanged.AddDynamic(this, &ASExplosiveActor::OnHealthChanged);
+	}
+}
+
+void ASExplosiveActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASExplosiveActor, bExploded);
 }
 
 void ASExplosiveActor::OnHealthChanged(USHealthComponent* _, int32 HealthDelta)
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	if (HealthComp->GetCurrentHealthPoints() <= 0 && !bExploded)
 	{	
 		Explode();
 		
 		bExploded = true;
+
+		OnRep_bExploded();
 	}
 }
 
 void ASExplosiveActor::Explode()
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	if (!ensureAlways(!bExploded))
 		return;
 
 	RadialForceComp->FireImpulse();
-	
-	PlayCosmeticExplosionEffects();
 
-	UE_LOG(LogTemp, Warning, TEXT("%s: Exploded!"));
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this);
+	UGameplayStatics::ApplyRadialDamage(
+		this,
+		ExplosionDamage,
+		GetActorLocation(),
+		RadialForceComp->Radius,
+		ExplosionDamageClass,
+		IgnoredActors);
 }
 
 void ASExplosiveActor::PlayCosmeticExplosionEffects() const
 {
+	check(FNetworkHelper::HasCosmetics(this))
+	
 	if (ExplodedMaterial)
 	{
 		StaticMesh->SetMaterial(0, ExplodedMaterial);
@@ -68,4 +95,13 @@ void ASExplosiveActor::PlayCosmeticExplosionEffects() const
 		const FRotator RandRotator = UKismetMathLibrary::RandomRotator(false);
 		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation(), RandRotator);
 	}
+}
+
+void ASExplosiveActor::OnRep_bExploded() const
+{
+	const FVector BoostImpulse = FVector::UpVector * RadialForceComp->ImpulseStrength;
+	StaticMesh->AddImpulse(BoostImpulse, NAME_None, true);
+	
+	if (FNetworkHelper::HasCosmetics(this) && bExploded)
+		PlayCosmeticExplosionEffects();
 }

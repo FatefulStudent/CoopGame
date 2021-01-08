@@ -1,6 +1,4 @@
-﻿// 
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -26,10 +24,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category=Explosion)
 	UParticleSystem* ExplosionEffect;
 	
+	UPROPERTY(EditDefaultsOnly, Category=Explosion)
+	float ExplosionDamage = 50.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category=Explosion)
+	TSubclassOf<UDamageType> ExplosionDamageClass = UDamageType::StaticClass();
+	
 	UPROPERTY(VisibleDefaultsOnly, Category=Health)
 	USHealthComponent* HealthComp;
 
 private:
+	UPROPERTY(ReplicatedUsing=OnRep_bExploded)
 	bool bExploded = false;
 	
 public:
@@ -37,6 +42,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
 
 private:
 	UFUNCTION()
@@ -46,5 +52,6 @@ private:
 
 	void PlayCosmeticExplosionEffects() const;
 
-	
+	UFUNCTION()
+	void OnRep_bExploded() const;
 };
