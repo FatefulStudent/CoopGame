@@ -53,11 +53,9 @@ void USWeaponEffects::PlayTraceEffect(const FVector& TraceEffectEnd) const
 	}
 }
 
-void USWeaponEffects::PlayEffectsOnImpact(const FHitResult& HitResult) const
+void USWeaponEffects::PlayEffectsOnImpact(const FVector& ImpactPoint, const EPhysicalSurface HitSurfaceType, const FVector& HitNormal) const
 {
 	check(FNetworkHelper::HasCosmetics(this));
-	
-	const EPhysicalSurface HitSurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
 
 	UParticleSystem* ImpactEffect = nullptr;
 
@@ -79,8 +77,8 @@ void USWeaponEffects::PlayEffectsOnImpact(const FHitResult& HitResult) const
 		UGameplayStatics::SpawnEmitterAtLocation(
             this,
             ImpactEffect,
-            HitResult.ImpactPoint,
-            HitResult.ImpactNormal.Rotation());
+            ImpactPoint,
+            HitNormal.Rotation());
 	}
 }
 

@@ -9,6 +9,27 @@ class USWeaponClip;
 class USWeaponEffects;
 class ASWeapon;
 
+USTRUCT()
+struct FShootResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bHitScan = true;
+
+	UPROPERTY()
+	bool bBlockingHit = false;
+
+	UPROPERTY()
+	FVector_NetQuantize TraceEnd { ForceInitToZero };
+	
+	UPROPERTY()
+	FVector_NetQuantizeNormal HitNormal = FVector::UpVector;
+
+	UPROPERTY()
+	TEnumAsByte<EPhysicalSurface> HitSurface = SurfaceType_Default;
+};
+
 UCLASS( ClassGroup=(WeaponParts), meta=(ChildCannotTick) )
 class COOPGAME_API USWeaponShooter : public UActorComponent
 {
@@ -46,7 +67,10 @@ private:
 	ASWeapon* WeaponActor;
 	
 	UPROPERTY()
-	APawn* PawnThatOwnsWeaponActor; 
+	APawn* PawnThatOwnsWeaponActor;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ShootResult)
+	FShootResult ShootResult;
 	
 public:
 	USWeaponShooter();
@@ -55,15 +79,20 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
+	
 private:
 	void ShootProjectile();
 	void SpawnProjectileAtMuzzle(APawn* PawnActor) const;
 
 	void ShootHitScan();
-	void PerformHitScanShot(FVector& TraceEffectEnd);
 	bool PerformLineTrace(const FVector& TraceStart, const FVector& TraceEnd, FHitResult& HitResult) const;
-	void ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult);
+	void ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult) const;
+	
 
-	void DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const;
+	UFUNCTION()
+	void OnRep_ShootResult() const;
+	void PlayHitScanSpecificEffects() const;
+	void PlayLocallyControlledSpecificEffects() const;
+	void PlayCommonEffects() const;
 };

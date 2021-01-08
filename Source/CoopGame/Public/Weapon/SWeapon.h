@@ -39,36 +39,23 @@ protected:
 	
 public:
 	ASWeapon();
-
-	// StartFiring
-	void StartFiring();
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerStartFiring();
 	
-	UFUNCTION(NetMulticast, Reliable)
-	void NetMulticastStartFiring();
-	// ~StartFiring
-
-	// StartFiring
+	void StartFiring();
+	
 	void StopFiring();
 
-	UFUNCTION(Server, Reliable, WithValidation)
-    void ServerStopFiring();
-		
-	UFUNCTION(NetMulticast, Reliable)
-    void NetMulticastStopFiring();
-	// ~StartFiring
-
-	// Reload
 	void Reload();
 	
+protected:
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerStartFiring();
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+    void ServerStopFiring();
+
 	UFUNCTION(Server, Reliable, WithValidation)
     void ServerReload();
 			
-	UFUNCTION(NetMulticast, Reliable)
-    void NetMulticastReload();
-
-	// ~Reload
-	
+	UFUNCTION(Client, Reliable)
+    void ClientReload();
 };

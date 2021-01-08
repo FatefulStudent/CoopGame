@@ -7,15 +7,8 @@
 #include "Helpers/NetworkHelper.h"
 
 #include "DrawDebugHelpers.h"
+#include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-
-static int32 DebugWeaponDrawing = 0;
-FAutoConsoleVariableRef CVARDebugWeaponDrawing(
-    TEXT("COOP.DebugWeapons"),
-    DebugWeaponDrawing,
-    TEXT("Draw debug lines when firing hitscan weapon"),
-    ECVF_Cheat
-);
 
 namespace WeaponShooterLocal
 {
@@ -45,12 +38,6 @@ void USWeaponShooter::Fire()
 {
 	if (!ensureAlways(Clip->HasBullets()))
 		return;
-
-	if (FNetworkHelper::HasCosmetics(this))
-	{
-		WeaponEffects->PlayCameraShake();
-		WeaponEffects->PlayMuzzleEffect();
-	}
 	
 	if (bShootProjectiles)
 		ShootProjectile();
@@ -71,13 +58,28 @@ void USWeaponShooter::BeginPlay()
 		ensureAlways(false);
 }
 
+void USWeaponShooter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(USWeaponShooter, ShootResult, COND_SkipOwner);
+}
+
 void USWeaponShooter::ShootProjectile()
 {
 	APawn* PawnActor = Cast<APawn>(WeaponActor->GetOwner());
 	// try and fire a projectile
-	if (ProjectileClass && PawnActor && FNetworkHelper::HasAuthority(this))
+	if (ProjectileClass && PawnActor)
 	{
-		SpawnProjectileAtMuzzle(PawnActor);
+		if (FNetworkHelper::HasAuthority(this))
+			SpawnProjectileAtMuzzle(PawnActor);
+
+		ShootResult = FShootResult
+		{
+			false
+		};
+
+		OnRep_ShootResult();
 	}
 }
 
@@ -102,15 +104,10 @@ void USWeaponShooter::SpawnProjectileAtMuzzle(APawn* PawnActor) const
 
 void USWeaponShooter::ShootHitScan()
 {
-	FVector TraceEffectEnd;
-	PerformHitScanShot(TraceEffectEnd);
+	check(FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this));
 
-	if (FNetworkHelper::HasCosmetics(this))
-		WeaponEffects->PlayTraceEffect(TraceEffectEnd);
-}
-
-void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
-{	
+	ShootResult = FShootResult();
+	
 	// Trace the world from the owners eyes perspective
 	APawn* InstigatorActor = WeaponActor->GetInstigator();
 	if (!InstigatorActor)
@@ -122,24 +119,34 @@ void USWeaponShooter::PerformHitScanShot(FVector& TraceEffectEnd)
 	FHitResult HitResult;
 	const bool bBlockingHit = PerformLineTrace(TraceStart, TraceEnd, HitResult);
 
+	FVector TraceEffectEnd = TraceEnd;
+	FVector HitNormal = FVector::UpVector;
+	
 	if (bBlockingHit)
 	{
 		if (FNetworkHelper::HasAuthority(this))
 			ApplyPointDamageToHitActor(ShotDirection, HitResult);
 
 		TraceEffectEnd = HitResult.ImpactPoint;
-		if (FNetworkHelper::HasCosmetics(this))
-			WeaponEffects->PlayEffectsOnImpact(HitResult);
+		HitNormal = HitResult.ImpactNormal;
 	}
-	else
-		TraceEffectEnd = TraceEnd;
 
-	if (DebugWeaponDrawing > 0 && FNetworkHelper::HasCosmetics(this))
-		DrawDebug(TraceStart, TraceEnd);
+	ShootResult = FShootResult
+	{
+		true,
+	    bBlockingHit,
+	    TraceEffectEnd,
+		HitNormal,
+	    UGameplayStatics::GetSurfaceType(HitResult)
+	};
+
+	OnRep_ShootResult();
 }
 
 bool USWeaponShooter::PerformLineTrace(const FVector& TraceStart, const FVector& TraceEnd, FHitResult& HitResult) const
 {
+	check(FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this));
+	
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(WeaponActor);
 	CollisionQueryParams.AddIgnoredActor(WeaponActor->GetInstigator());
@@ -154,7 +161,7 @@ bool USWeaponShooter::PerformLineTrace(const FVector& TraceStart, const FVector&
         CollisionQueryParams);
 }
 
-void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult)
+void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, const FHitResult& HitResult) const
 {
 	check(FNetworkHelper::HasAuthority(this));
 	float DamageToApply = BaseDamage;
@@ -172,7 +179,37 @@ void USWeaponShooter::ApplyPointDamageToHitActor(const FVector& ShotDirection, c
         DamageType);
 }
 
-void USWeaponShooter::DrawDebug(const FVector& TraceStart, const FVector& TraceEnd) const
+void USWeaponShooter::OnRep_ShootResult() const
 {
-	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 2.0f);
+	if (FNetworkHelper::HasCosmetics(this))
+	{
+		PlayHitScanSpecificEffects();
+
+		PlayLocallyControlledSpecificEffects();
+		
+		PlayCommonEffects();
+	}
+}
+
+void USWeaponShooter::PlayHitScanSpecificEffects() const
+{
+	if (ShootResult.bHitScan)
+	{
+		WeaponEffects->PlayTraceEffect(ShootResult.TraceEnd);
+			
+		if (ShootResult.bBlockingHit)
+			WeaponEffects->PlayEffectsOnImpact(ShootResult.TraceEnd, ShootResult.HitSurface, ShootResult.HitNormal);
+	}
+}
+
+void USWeaponShooter::PlayLocallyControlledSpecificEffects() const
+{
+	if (APawn* OwningPawn = WeaponActor->GetInstigator())
+		if (OwningPawn->IsLocallyControlled())
+			WeaponEffects->PlayCameraShake();
+}
+
+void USWeaponShooter::PlayCommonEffects() const
+{
+	WeaponEffects->PlayMuzzleEffect();
 }

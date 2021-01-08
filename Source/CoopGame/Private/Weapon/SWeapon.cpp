@@ -1,9 +1,9 @@
 #include "Weapon/SWeapon.h"
-
 #include "Weapon/Parts/SWeaponClip.h"
 #include "Weapon/Parts/SWeaponFiringTrigger.h"
 #include "Weapon/Parts/SWeaponShooter.h"
 #include "Weapon/Parts/SWeaponEffects.h"
+#include "Helpers/NetworkHelper.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -28,16 +28,18 @@ ASWeapon::ASWeapon()
 
 void ASWeapon::StartFiring()
 {
-	if (AActor* WeaponOwner = GetOwner())
-	{
-		if (WeaponOwner->GetLocalRole() >= ROLE_AutonomousProxy)
-			ServerStartFiring();
-	}
+	check(FNetworkHelper::IsLocallyControlled(this));
+
+	ServerStartFiring();
+
+	// if we are autonomous client we want to simulate firing on our side
+	if (FNetworkHelper::IsAutonomousProxy(this))
+		FiringTrigger->StartFiring();
 }
 
 void ASWeapon::ServerStartFiring_Implementation()
 {
-	NetMulticastStartFiring();
+	FiringTrigger->StartFiring();
 }
 
 bool ASWeapon::ServerStartFiring_Validate()
@@ -45,23 +47,20 @@ bool ASWeapon::ServerStartFiring_Validate()
 	return true;
 }
 
-void ASWeapon::NetMulticastStartFiring_Implementation()
-{
-	FiringTrigger->StartFiring();
-}
-
 void ASWeapon::StopFiring()
 {
-	if (AActor* WeaponOwner = GetOwner())
-	{
-		if (WeaponOwner->GetLocalRole() >= ROLE_AutonomousProxy)
-			ServerStopFiring();
-	}
+	check(FNetworkHelper::IsLocallyControlled(this));
+
+	ServerStopFiring();
+
+	// if we are autonomous client we want to simulate firing on our side
+	if (FNetworkHelper::IsAutonomousProxy(this))
+		FiringTrigger->StopFiring();
 }
 
 void ASWeapon::ServerStopFiring_Implementation()
 {
-	NetMulticastStopFiring();
+	FiringTrigger->StopFiring();
 }
 
 bool ASWeapon::ServerStopFiring_Validate()
@@ -69,23 +68,18 @@ bool ASWeapon::ServerStopFiring_Validate()
 	return true;
 }
 
-void ASWeapon::NetMulticastStopFiring_Implementation()
-{
-	FiringTrigger->StopFiring();
-}
-
 void ASWeapon::Reload()
 {
-	if (AActor* WeaponOwner = GetOwner())
-	{
-		if (WeaponOwner->GetLocalRole() >= ROLE_AutonomousProxy)
-			ServerReload();
-	}
+	if (FNetworkHelper::HasAuthority(this) || FNetworkHelper::IsLocallyControlled(this))
+		ServerReload();
 }
 
 void ASWeapon::ServerReload_Implementation()
 {
-	NetMulticastReload();	
+	Clip->Reload();
+
+	if (!FNetworkHelper::IsLocallyControlled(this))
+		ClientReload();	
 }
 
 bool ASWeapon::ServerReload_Validate()
@@ -93,7 +87,7 @@ bool ASWeapon::ServerReload_Validate()
 	return true;
 }
 
-void ASWeapon::NetMulticastReload_Implementation()
+void ASWeapon::ClientReload_Implementation()
 {
 	Clip->Reload();
 }
