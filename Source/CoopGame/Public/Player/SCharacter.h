@@ -36,7 +36,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category=Weapon)
 	FName WeaponSocketName = TEXT("WeaponSocket");
 
-	UPROPERTY(BlueprintReadOnly, Category=Health)
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_bDied, Category=Health)
 	bool bDied = false;
 	
 	// whether we want to zoom or not
@@ -45,7 +45,7 @@ protected:
 	// FOV cached from camera at BeginPlay
 	float DefaultFOV = 90.0f;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	ASWeapon* CurrentWeapon;
 
 public:
@@ -56,11 +56,12 @@ public:
 
 protected:
 	// ACharacter overrides
-	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
+
 	// ~ACharacter overrides
 	
 	void SpawnWeapon();
@@ -82,5 +83,7 @@ protected:
 	UFUNCTION()
     void OnHealthChanged(USHealthComponent* _, int32 HealthDelta);
 	void KillCharacter();
-	
+
+	UFUNCTION()
+	void OnRep_bDied();
 };

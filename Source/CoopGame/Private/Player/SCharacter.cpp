@@ -1,17 +1,20 @@
 #include "Player/SCharacter.h"
+#include "Player/Components/SHealthComponent.h"
 #include "Weapon/SWeapon.h"
+#include "CoopGame/CoopGame.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "CoopGame/CoopGame.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Player/Components/SHealthComponent.h"
+#include "Net/UnrealNetwork.h"
 
 
 ASCharacter::ASCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SetReplicates(true);
+	ACharacter::SetReplicateMovement(true);
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
     SpringArmComp->bUsePawnControlRotation = true;
@@ -32,20 +35,15 @@ FVector ASCharacter::GetPawnViewLocation() const
 	return CameraComp->GetComponentLocation();
 }
 
-void ASCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-	
-	SpawnWeapon();
-}
-
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
 	DefaultFOV = CameraComp->FieldOfView;
-	CurrentWeapon->SetInstigator(this);
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+
+	if (HasAuthority())
+		SpawnWeapon();
 }
 
 void ASCharacter::Tick(float DeltaSeconds)
@@ -82,12 +80,24 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (CurrentWeapon)
-		CurrentWeapon->Destroy();
+	if (HasAuthority())
+	{
+		if (CurrentWeapon)
+			CurrentWeapon->Destroy();
+	}
+}
+
+void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASCharacter, bDied);
+	DOREPLIFETIME(ASCharacter, CurrentWeapon);
 }
 
 void ASCharacter::SpawnWeapon()
 {
+	check(HasAuthority());
 	FActorSpawnParameters WeaponSpawnParams;
 	WeaponSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	WeaponSpawnParams.Instigator = this;
@@ -172,22 +182,34 @@ void ASCharacter::OnHealthChanged(USHealthComponent* _, int32 HealthDelta)
 	if (HealthComp->GetCurrentHealthPoints() <= 0 && !bDied)
 	{
 		// Die!
-		KillCharacter();
+		if (HasAuthority())
+			KillCharacter();
 	}
 }
 
 void ASCharacter::KillCharacter()
 {
+	check(HasAuthority());
+	
 	if (!ensureAlways(!bDied))
 		return;
 
 	bDied = true;
-	
-	GetMovementComponent()->StopMovementImmediately();
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OnRep_bDied();
 
 	DetachFromControllerPendingDestroy();
-
 	SetLifeSpan(10.0f);
+}
+
+void ASCharacter::OnRep_bDied()
+{
+	if (bDied)
+	{
+		GetMovementComponent()->StopMovementImmediately();
+		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+		GetCapsuleComponent()->SetEnableGravity(false);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMesh()->SetEnableGravity(false);
+	}
 }

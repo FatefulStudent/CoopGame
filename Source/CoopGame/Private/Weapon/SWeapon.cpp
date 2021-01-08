@@ -10,6 +10,7 @@
 ASWeapon::ASWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	SetReplicates(true);
 
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
 	RootComponent = SkeletalMeshComp;
