@@ -52,8 +52,9 @@ void USHealthComponent::OnOwnerTakeDamage(AActor* DamagedActor, float Damage, co
 
 	const int32 HealthPointsDelta = -Damage;
 	CurrentHealthPoints += HealthPointsDelta;
+	const FString OwnerName = GetOwner() ? GetOwner()->GetName() : "Null owner";
 	UE_LOG(LogTemp, Log, TEXT("%s was damaged by %s. Remaining health: %d"),
-		*GetName(), *FString::SanitizeFloat(Damage), CurrentHealthPoints);
+		*OwnerName, *FString::SanitizeFloat(Damage), CurrentHealthPoints);
 
 	OnHealthChanged.Broadcast(this, HealthPointsDelta);
 }

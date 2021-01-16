@@ -19,7 +19,7 @@ protected:
 
 	// when player enters this sphere, the bot will explode
 	UPROPERTY(VisibleDefaultsOnly, Category="Damage|ExplodeNearPlayer")
-	USphereComponent* OverlapComponent;
+	USphereComponent* PlayerOverlapComponent;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Damage|ExplodeNearPlayer")
 	float SelfHarmRate = 0.3f;
@@ -51,6 +51,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
 	USoundBase* ExplosionSound;	
 
+	// when tracker bot enters this sphere, the bot will gain
+	UPROPERTY(VisibleDefaultsOnly, Category="Damage|ExplodeNearPlayer")
+	USphereComponent* TrackerBotOverlapComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category="Damage|SwarmBoost")
+	float AdditionalDamageModifierForEachNewBot = 0.2f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Damage|SwarmBoost")
+	float MaxSwarmDamageModifier = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Damage|SwarmBoost")
+	FName PowerLevelParameterName = TEXT("PowerLevel");
+
 	// How quickly it will move to next path point
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
 	float RollingForceStrength = 100.0f;
@@ -70,14 +83,19 @@ protected:
 
 private:
 	UPROPERTY()
-	UMaterialInstanceDynamic* MaterialForPulseOnDamage;
-
+	UMaterialInstanceDynamic* DynamicMaterialInstance;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_CurrentSwarmDamageModifier)
+	float CurrentSwarmDamageModifier = 0;
+	
 	UPROPERTY(ReplicatedUsing=OnRep_bExploded)
 	bool bExploded = false;
 	
 	UPROPERTY(ReplicatedUsing=OnRep_bSelfDestructionStarted)
 	bool bSelfDestructionStarted = false;
 
+	int32 TrackerBotsInRange = 0;
+	
 	FTimerHandle OverlappedWithPlayerSelfHarm_TimerHandle;
 
 public:
@@ -86,7 +104,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
 	
 	void StartSelfDestructionIfNeeded();
@@ -96,6 +113,19 @@ private:
 	void HandleHealthChanged(USHealthComponent* _, int32 HealthDelta);
 	void PlayEffectsOnDamage();
 
+	UFUNCTION()
+	void HandleBeginOverlapOfPlayerOverlapComponent(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+
+	UFUNCTION()
+	void HandleBeginOverlapOfTrackerBotOverlapComponent(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+	
+	UFUNCTION()
+	void HandleEndOverlapOfTrackerBotOverlapComponent(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	void RecalculateSwarmDamageModifier();
+
 	FVector CalculateNextPathPoint() const;
 	void MoveToTargetByForce();
 
@@ -104,6 +134,9 @@ private:
 	void Explode();
 	void PlayExplosionEffects() const;
 	void ApplyDamageAndSelfDestroy();
+
+	UFUNCTION()
+	void OnRep_CurrentSwarmDamageModifier();
 
 	UFUNCTION()
 	void OnRep_bSelfDestructionStarted() const;

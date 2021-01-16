@@ -22,14 +22,20 @@ ASTrackerBot::ASTrackerBot()
 	StaticMeshComp->SetSimulatePhysics(true);
 	RootComponent = StaticMeshComp;
 
-	OverlapComponent = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
-	OverlapComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	OverlapComponent->SetCollisionObjectType(ECC_WorldDynamic);
-	OverlapComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-	OverlapComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	OverlapComponent->SetupAttachment(RootComponent);
-	
+	PlayerOverlapComponent = CreateDefaultSubobject<USphereComponent>(TEXT("PlayerOverlapSphere"));
+	PlayerOverlapComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	PlayerOverlapComponent->SetCollisionObjectType(ECC_WorldDynamic);
+	PlayerOverlapComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	PlayerOverlapComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	PlayerOverlapComponent->SetupAttachment(RootComponent);
 
+	TrackerBotOverlapComponent = CreateDefaultSubobject<USphereComponent>(TEXT("TrackerOverlapSphere"));
+	TrackerBotOverlapComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	TrackerBotOverlapComponent->SetCollisionObjectType(ECC_WorldDynamic);
+	TrackerBotOverlapComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	TrackerBotOverlapComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	TrackerBotOverlapComponent->SetupAttachment(RootComponent);
+	
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 }
 
@@ -38,6 +44,9 @@ void ASTrackerBot::BeginPlay()
 	Super::BeginPlay();
 
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASTrackerBot::HandleHealthChanged);
+	PlayerOverlapComponent->OnComponentBeginOverlap.AddDynamic(this, &ASTrackerBot::HandleBeginOverlapOfPlayerOverlapComponent);
+	TrackerBotOverlapComponent->OnComponentBeginOverlap.AddDynamic(this, &ASTrackerBot::HandleBeginOverlapOfTrackerBotOverlapComponent);
+	TrackerBotOverlapComponent->OnComponentEndOverlap.AddDynamic(this, &ASTrackerBot::HandleEndOverlapOfTrackerBotOverlapComponent);
 
 	// Initial move-to
 	if (FNetworkHelper::HasAuthority(this))
@@ -56,23 +65,16 @@ void ASTrackerBot::Tick(float DeltaTime)
 
 void ASTrackerBot::StartSelfDestructionIfNeeded()
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	// Start self destruct sequence
 	if (!bSelfDestructionStarted)
 	{
 		bSelfDestructionStarted = true;
 		OnRep_bSelfDestructionStarted();
 		
-		if (FNetworkHelper::HasAuthority(this))
-			GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer,
+		GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer,
 				SelfHarmRate, true, 0.0f);
-	}
-}
-
-void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
-{
-	if (OtherActor->IsA<ASCharacter>())
-	{
-		StartSelfDestructionIfNeeded();
 	}
 }
 
@@ -82,6 +84,7 @@ void ASTrackerBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 	DOREPLIFETIME(ASTrackerBot, bExploded);
 	DOREPLIFETIME(ASTrackerBot, bSelfDestructionStarted);
+	DOREPLIFETIME(ASTrackerBot, CurrentSwarmDamageModifier);
 }
 
 void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
@@ -92,21 +95,80 @@ void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
 	if (FNetworkHelper::HasAuthority(this))
 		if (HealthComp->GetCurrentHealthPoints() <= 0)
 			Explode();
-		
-	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
 }
 
 void ASTrackerBot::PlayEffectsOnDamage()
 {
-	if (MaterialForPulseOnDamage == nullptr)
-		MaterialForPulseOnDamage = StaticMeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, StaticMeshComp->GetMaterial(0));
+	if (DynamicMaterialInstance == nullptr)
+		DynamicMaterialInstance = StaticMeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, StaticMeshComp->GetMaterial(0));
 
-	if (MaterialForPulseOnDamage)
-		MaterialForPulseOnDamage->SetScalarParameterValue(LastTimeDamagedParameterName, GetWorld()->GetTimeSeconds());
+	if (DynamicMaterialInstance)
+		DynamicMaterialInstance->SetScalarParameterValue(LastTimeDamagedParameterName, GetWorld()->GetTimeSeconds());
+}
+
+void ASTrackerBot::HandleBeginOverlapOfPlayerOverlapComponent(UPrimitiveComponent* OverlappedComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (!FNetworkHelper::HasAuthority(this))
+		return;
+
+	
+	if (OtherActor->IsA<ASCharacter>())
+	{
+		StartSelfDestructionIfNeeded();
+	}
+}
+
+void ASTrackerBot::HandleBeginOverlapOfTrackerBotOverlapComponent(UPrimitiveComponent* OverlappedComponent,
+    AActor* OtherActor,
+    UPrimitiveComponent* OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult& SweepResult)
+{
+	if (!FNetworkHelper::HasAuthority(this))
+		return;
+
+	
+	if (OtherActor->IsA<ASTrackerBot>() && OtherActor!=this)
+	{
+		TrackerBotsInRange++;
+		RecalculateSwarmDamageModifier();
+	}
+}
+
+void ASTrackerBot::HandleEndOverlapOfTrackerBotOverlapComponent(UPrimitiveComponent* OverlappedComponent, 
+	AActor* OtherActor, 
+	UPrimitiveComponent* OtherComp, 
+	int32 OtherBodyIndex)
+{
+	if (!FNetworkHelper::HasAuthority(this))
+		return;
+	
+	if (OtherActor->IsA<ASTrackerBot>() && OtherActor!=this)
+	{
+		TrackerBotsInRange--;
+		RecalculateSwarmDamageModifier();
+	}
+}
+
+void ASTrackerBot::RecalculateSwarmDamageModifier()
+{
+	check(FNetworkHelper::HasAuthority(this));
+
+	const float NewSwarmDamageModifier = TrackerBotsInRange * AdditionalDamageModifierForEachNewBot;
+	CurrentSwarmDamageModifier = FMath::Clamp(NewSwarmDamageModifier, 0.0f, MaxSwarmDamageModifier);
+	OnRep_CurrentSwarmDamageModifier();
 }
 
 FVector ASTrackerBot::CalculateNextPathPoint() const
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	AActor* GoalActor = UGameplayStatics::GetPlayerCharacter(this, 0);
 	if (!GoalActor)
 		return GetActorLocation();
@@ -123,6 +185,8 @@ FVector ASTrackerBot::CalculateNextPathPoint() const
 
 void ASTrackerBot::MoveToTargetByForce()
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	const bool bIsAtGoal = FVector::Distance(GetActorLocation(), NextPathPoint) < AcceptanceRadiusToTarget;
 	if (bIsAtGoal)
 	{
@@ -169,14 +233,27 @@ void ASTrackerBot::PlayExplosionEffects() const
 void ASTrackerBot::ApplyDamageAndSelfDestroy()
 {
 	check(FNetworkHelper::HasAuthority(this));
+
+	const float FinalDamage = ExplosionDamage * (1.0f + CurrentSwarmDamageModifier);
 	
 	TArray<AActor*> IgnoredActors;
 	IgnoredActors.Add(this);
 	
-	UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius, ExplosionDamageClass,
+	UGameplayStatics::ApplyRadialDamage(this, FinalDamage, GetActorLocation(), ExplosionRadius, ExplosionDamageClass,
                                         IgnoredActors, this, this->GetController(), true);
 
 	SetLifeSpan(1.0f);
+}
+
+void ASTrackerBot::OnRep_CurrentSwarmDamageModifier()
+{
+	const float CurrentPowerLevelClamped = CurrentSwarmDamageModifier / FMath::Max(MaxSwarmDamageModifier, KINDA_SMALL_NUMBER);
+	
+	if (DynamicMaterialInstance == nullptr)
+		DynamicMaterialInstance = StaticMeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, StaticMeshComp->GetMaterial(0));
+
+	if (DynamicMaterialInstance)
+		DynamicMaterialInstance->SetScalarParameterValue(PowerLevelParameterName, CurrentPowerLevelClamped);
 }
 
 void ASTrackerBot::OnRep_bSelfDestructionStarted() const
