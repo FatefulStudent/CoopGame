@@ -15,12 +15,15 @@ ASTrackerBot::ASTrackerBot()
 	StaticMeshComp->SetCanEverAffectNavigation(false);
 	StaticMeshComp->SetSimulatePhysics(true);
 	RootComponent = StaticMeshComp;
+
+	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 }
 
 void ASTrackerBot::BeginPlay()
 {
 	Super::BeginPlay();
 
+	HealthComp->OnHealthChanged.AddDynamic(this, &ASTrackerBot::HandleHealthChanged);
 	// Initial move-to
 	NextPathPoint = CalculateNextPathPoint();
 }
@@ -30,6 +33,11 @@ void ASTrackerBot::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MoveToTargetByForce();
+}
+
+void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
+{
+	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
 }
 
 FVector ASTrackerBot::CalculateNextPathPoint() const
