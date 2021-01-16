@@ -1,10 +1,12 @@
 ﻿#include "AI/STrackerBot.h"
+#include "Helpers/NetworkHelper.h"
 #include "Common/Components/SHealthComponent.h"
 
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 
 ASTrackerBot::ASTrackerBot()
@@ -37,13 +39,21 @@ void ASTrackerBot::Tick(float DeltaTime)
 
 void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
 {
+	PlayEffectsOnDamage();
+
+	if (HealthComp->GetCurrentHealthPoints() <= 0)
+		Explode();
+	
+	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
+}
+
+void ASTrackerBot::PlayEffectsOnDamage()
+{
 	if (MaterialForPulseOnDamage == nullptr)
 		MaterialForPulseOnDamage = StaticMeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, StaticMeshComp->GetMaterial(0));
 
 	if (MaterialForPulseOnDamage)
 		MaterialForPulseOnDamage->SetScalarParameterValue(LastTimeDamagedParameterName, GetWorld()->GetTimeSeconds());
-	
-	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
 }
 
 FVector ASTrackerBot::CalculateNextPathPoint() const
@@ -75,4 +85,40 @@ void ASTrackerBot::MoveToTargetByForce()
 		const FVector Force = ForceDirection * RollingForceStrength;
 		StaticMeshComp->AddForce(Force, NAME_None, bAccelChange);
 	}
+}
+
+void ASTrackerBot::Explode()
+{
+	if (bExploded)
+		return;
+
+	bExploded = true;
+	
+	if (FNetworkHelper::HasCosmetics(this))
+		PlayExplosionEffects();
+
+	if (FNetworkHelper::HasAuthority(this))
+		ApplyDamageAndSelfDestroy();
+}
+
+void ASTrackerBot::PlayExplosionEffects() const
+{
+	check(FNetworkHelper::HasCosmetics(this));
+	
+	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
+
+	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 10, FColor::Red, false, 5.0f, 0, 5);
+}
+
+void ASTrackerBot::ApplyDamageAndSelfDestroy()
+{
+	check(FNetworkHelper::HasAuthority(this));
+	
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this);
+	
+	UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius, ExplosionDamageClass,
+                                        IgnoredActors, this, this->GetController(), true);
+	
+	Destroy();
 }

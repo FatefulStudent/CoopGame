@@ -16,11 +16,23 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
 	UStaticMeshComponent* StaticMeshComp;
 	
-	UPROPERTY(VisibleDefaultsOnly, Category=Health)
+	UPROPERTY(VisibleDefaultsOnly, Category=Damage)
 	USHealthComponent* HealthComp;
 	
-	UPROPERTY(EditDefaultsOnly, Category=Health)
+	UPROPERTY(EditDefaultsOnly, Category=Damage)
 	FName LastTimeDamagedParameterName = TEXT("LastTimeDamaged");
+
+	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	UParticleSystem* ExplosionEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	int32 ExplosionDamage = 50;
+
+	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	float ExplosionRadius = 150.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	TSubclassOf<UDamageType> ExplosionDamageClass = UDamageType::StaticClass();
 
 	// How quickly it will move to next path point
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
@@ -36,12 +48,14 @@ protected:
 
 	// If true, mass will have no effect on movement
 	UPROPERTY(BlueprintReadOnly, Category=Movement)
-	// Next point in navigation path to player character
 	FVector NextPathPoint = FVector(ForceInitToZero);
+	
 
 private:
 	UPROPERTY()
 	UMaterialInstanceDynamic* MaterialForPulseOnDamage;
+
+	bool bExploded = false;
 
 public:
 	ASTrackerBot();
@@ -49,12 +63,17 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	
 
 private:
 	UFUNCTION()
 	void HandleHealthChanged(USHealthComponent* _, int32 HealthDelta);
+	void PlayEffectsOnDamage();
 
 	FVector CalculateNextPathPoint() const;
 
 	void MoveToTargetByForce();
+	void Explode();
+	void PlayExplosionEffects() const;
+	void ApplyDamageAndSelfDestroy();
 };
