@@ -1,5 +1,5 @@
 ﻿#include "AI/STrackerBot.h"
-
+#include "Common/Components/SHealthComponent.h"
 
 #include "NavigationPath.h"
 #include "NavigationSystem.h"

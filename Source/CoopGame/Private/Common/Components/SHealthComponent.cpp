@@ -1,4 +1,4 @@
-﻿#include "Player/Components/SHealthComponent.h"
+﻿#include "Common/Components/SHealthComponent.h"
 #include "Helpers/NetworkHelper.h"
 
 #include "Net/UnrealNetwork.h"

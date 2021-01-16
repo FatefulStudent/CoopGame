@@ -1,6 +1,6 @@
 #include "Player/SCharacter.h"
 #include "Helpers/NetworkHelper.h"
-#include "Player/Components/SHealthComponent.h"
+#include "Common/Components/SHealthComponent.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
 

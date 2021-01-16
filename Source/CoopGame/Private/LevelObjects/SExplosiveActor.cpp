@@ -1,6 +1,6 @@
 ﻿#include "LevelObjects/SExplosiveActor.h"
 #include "Helpers/NetworkHelper.h"
-#include "Player/Components/SHealthComponent.h"
+#include "Common/Components/SHealthComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"

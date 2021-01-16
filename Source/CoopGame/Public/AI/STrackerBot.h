@@ -2,7 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+
 #include "STrackerBot.generated.h"
+
+class USHealthComponent;
 
 UCLASS()
 class COOPGAME_API ASTrackerBot : public APawn
@@ -12,6 +15,9 @@ class COOPGAME_API ASTrackerBot : public APawn
 protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
 	UStaticMeshComponent* StaticMeshComp;
+	
+	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
+	USHealthComponent* HealthComp;
 
 	// How quickly it will move to next path point
 	UPROPERTY(EditDefaultsOnly, Category=Rolling)
