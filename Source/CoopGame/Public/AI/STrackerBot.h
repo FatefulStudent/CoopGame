@@ -27,23 +27,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Damage|ExplodeNearPlayer")
 	float SelfHarmDamage = 20.0f;
 	
-	UPROPERTY(VisibleDefaultsOnly, Category=Damage)
+	UPROPERTY(EditDefaultsOnly, Category="Damage|ExplodeNearPlayer")
+	USoundBase* SelfDestructionSequenceStartedSound;
+	
+	UPROPERTY(VisibleDefaultsOnly, Category="Damage")
 	USHealthComponent* HealthComp;
 	
-	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	UPROPERTY(EditDefaultsOnly, Category="Damage")
 	FName LastTimeDamagedParameterName = TEXT("LastTimeDamaged");
 
-	UPROPERTY(EditDefaultsOnly, Category=Damage)
-	UParticleSystem* ExplosionEffect;
-
-	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
 	int32 ExplosionDamage = 50;
 
-	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
 	float ExplosionRadius = 150.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category=Damage)
+	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
 	TSubclassOf<UDamageType> ExplosionDamageClass = UDamageType::StaticClass();
+
+	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
+	UParticleSystem* ExplosionEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category="Damage|Explosion")
+	USoundBase* ExplosionSound;	
 
 	// How quickly it will move to next path point
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
@@ -76,6 +82,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	void StartSelfDestructionIfNeeded();
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	
 

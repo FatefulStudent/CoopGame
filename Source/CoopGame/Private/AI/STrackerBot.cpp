@@ -48,16 +48,27 @@ void ASTrackerBot::Tick(float DeltaTime)
 	MoveToTargetByForce();
 }
 
+void ASTrackerBot::StartSelfDestructionIfNeeded()
+{
+	const bool bSelfDestructTimerAlreadyExists = GetWorld()->GetTimerManager().TimerExists(OverlappedWithPlayerSelfHarm_TimerHandle);
+
+	// Start self destruct sequence
+	if (!bSelfDestructTimerAlreadyExists)
+	{
+		if (FNetworkHelper::HasCosmetics(this))
+			UGameplayStatics::SpawnSoundAttached(SelfDestructionSequenceStartedSound, StaticMeshComp);
+		
+		if (FNetworkHelper::HasAuthority(this))
+			GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer,
+				SelfHarmRate, true, 0.0f);
+	}
+}
+
 void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	if (OtherActor->IsA<ASCharacter>())
 	{
-		const bool bSelfDestructTimerAlreadyExists = GetWorld()->GetTimerManager().TimerExists(OverlappedWithPlayerSelfHarm_TimerHandle);
-
-		// Start self destruct sequence
-		if (!bSelfDestructTimerAlreadyExists)
-			GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer, SelfHarmRate,
-				true, 0.0f);
+		StartSelfDestructionIfNeeded();
 	}
 }
 
@@ -135,6 +146,8 @@ void ASTrackerBot::PlayExplosionEffects() const
 	check(FNetworkHelper::HasCosmetics(this));
 	
 	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, GetActorLocation());
+	
+	UGameplayStatics::SpawnSoundAtLocation(this, ExplosionSound, GetActorLocation());
 
 	DrawDebugSphere(GetWorld(), GetActorLocation(), ExplosionRadius, 10, FColor::Red, false, 5.0f, 0, 5);
 }
