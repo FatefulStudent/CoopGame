@@ -7,6 +7,9 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "Components/SphereComponent.h"
+#include "Engine/EngineTypes.h"
+#include "Player/SCharacter.h"
 
 
 ASTrackerBot::ASTrackerBot()
@@ -17,6 +20,14 @@ ASTrackerBot::ASTrackerBot()
 	StaticMeshComp->SetCanEverAffectNavigation(false);
 	StaticMeshComp->SetSimulatePhysics(true);
 	RootComponent = StaticMeshComp;
+
+	OverlapComponent = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
+	OverlapComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OverlapComponent->SetCollisionObjectType(ECC_WorldDynamic);
+	OverlapComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+	OverlapComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	OverlapComponent->SetupAttachment(RootComponent);
+	
 
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 }
@@ -35,6 +46,19 @@ void ASTrackerBot::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MoveToTargetByForce();
+}
+
+void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	if (OtherActor->IsA<ASCharacter>())
+	{
+		const bool bSelfDestructTimerAlreadyExists = GetWorld()->GetTimerManager().TimerExists(OverlappedWithPlayerSelfHarm_TimerHandle);
+
+		// Start self destruct sequence
+		if (!bSelfDestructTimerAlreadyExists)
+			GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer, SelfHarmRate,
+				true, 0.0f);
+	}
 }
 
 void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
@@ -85,6 +109,11 @@ void ASTrackerBot::MoveToTargetByForce()
 		const FVector Force = ForceDirection * RollingForceStrength;
 		StaticMeshComp->AddForce(Force, NAME_None, bAccelChange);
 	}
+}
+
+void ASTrackerBot::SelfHarmNearPlayer()
+{
+	UGameplayStatics::ApplyDamage(this, SelfHarmDamage, GetController(), this, nullptr);
 }
 
 void ASTrackerBot::Explode()

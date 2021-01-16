@@ -6,6 +6,7 @@
 #include "STrackerBot.generated.h"
 
 class USHealthComponent;
+class USphereComponent;
 
 UCLASS()
 class COOPGAME_API ASTrackerBot : public APawn
@@ -15,6 +16,16 @@ class COOPGAME_API ASTrackerBot : public APawn
 protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
 	UStaticMeshComponent* StaticMeshComp;
+
+	// when player enters this sphere, the bot will explode
+	UPROPERTY(VisibleDefaultsOnly, Category="Damage|ExplodeNearPlayer")
+	USphereComponent* OverlapComponent;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Damage|ExplodeNearPlayer")
+	float SelfHarmRate = 0.3f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Damage|ExplodeNearPlayer")
+	float SelfHarmDamage = 20.0f;
 	
 	UPROPERTY(VisibleDefaultsOnly, Category=Damage)
 	USHealthComponent* HealthComp;
@@ -57,12 +68,15 @@ private:
 
 	bool bExploded = false;
 
+	FTimerHandle OverlappedWithPlayerSelfHarm_TimerHandle;
+
 public:
 	ASTrackerBot();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	
 
 private:
@@ -71,8 +85,10 @@ private:
 	void PlayEffectsOnDamage();
 
 	FVector CalculateNextPathPoint() const;
-
 	void MoveToTargetByForce();
+
+	void SelfHarmNearPlayer();
+	
 	void Explode();
 	void PlayExplosionEffects() const;
 	void ApplyDamageAndSelfDestroy();
