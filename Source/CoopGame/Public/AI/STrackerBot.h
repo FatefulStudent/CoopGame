@@ -18,6 +18,9 @@ protected:
 	
 	UPROPERTY(VisibleDefaultsOnly, Category=Health)
 	USHealthComponent* HealthComp;
+	
+	UPROPERTY(EditDefaultsOnly, Category=Health)
+	FName LastTimeDamagedParameterName = TEXT("LastTimeDamaged");
 
 	// How quickly it will move to next path point
 	UPROPERTY(EditDefaultsOnly, Category=Movement)
@@ -35,6 +38,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category=Movement)
 	// Next point in navigation path to player character
 	FVector NextPathPoint = FVector(ForceInitToZero);
+
+private:
+	UPROPERTY()
+	UMaterialInstanceDynamic* MaterialForPulseOnDamage;
 
 public:
 	ASTrackerBot();

@@ -37,6 +37,12 @@ void ASTrackerBot::Tick(float DeltaTime)
 
 void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
 {
+	if (MaterialForPulseOnDamage == nullptr)
+		MaterialForPulseOnDamage = StaticMeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, StaticMeshComp->GetMaterial(0));
+
+	if (MaterialForPulseOnDamage)
+		MaterialForPulseOnDamage->SetScalarParameterValue(LastTimeDamagedParameterName, GetWorld()->GetTimeSeconds());
+	
 	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
 }
 
