@@ -72,7 +72,11 @@ private:
 	UPROPERTY()
 	UMaterialInstanceDynamic* MaterialForPulseOnDamage;
 
+	UPROPERTY(ReplicatedUsing=OnRep_bExploded)
 	bool bExploded = false;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_bSelfDestructionStarted)
+	bool bSelfDestructionStarted = false;
 
 	FTimerHandle OverlappedWithPlayerSelfHarm_TimerHandle;
 
@@ -82,10 +86,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	void StartSelfDestructionIfNeeded();
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
 	
-
+	void StartSelfDestructionIfNeeded();
+	
 private:
 	UFUNCTION()
 	void HandleHealthChanged(USHealthComponent* _, int32 HealthDelta);
@@ -99,4 +104,10 @@ private:
 	void Explode();
 	void PlayExplosionEffects() const;
 	void ApplyDamageAndSelfDestroy();
+
+	UFUNCTION()
+	void OnRep_bSelfDestructionStarted() const;
+	
+	UFUNCTION()
+	void OnRep_bExploded() const;
 };

@@ -9,6 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/SphereComponent.h"
 #include "Engine/EngineTypes.h"
+#include "Net/UnrealNetwork.h"
 #include "Player/SCharacter.h"
 
 
@@ -37,26 +38,29 @@ void ASTrackerBot::BeginPlay()
 	Super::BeginPlay();
 
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASTrackerBot::HandleHealthChanged);
+
 	// Initial move-to
-	NextPathPoint = CalculateNextPathPoint();
+	if (FNetworkHelper::HasAuthority(this))
+		NextPathPoint = CalculateNextPathPoint();
+	else
+		SetActorTickEnabled(false);
 }
 
 void ASTrackerBot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	MoveToTargetByForce();
+	if (FNetworkHelper::HasAuthority(this) && !bExploded)
+		MoveToTargetByForce();
 }
 
 void ASTrackerBot::StartSelfDestructionIfNeeded()
 {
-	const bool bSelfDestructTimerAlreadyExists = GetWorld()->GetTimerManager().TimerExists(OverlappedWithPlayerSelfHarm_TimerHandle);
-
 	// Start self destruct sequence
-	if (!bSelfDestructTimerAlreadyExists)
+	if (!bSelfDestructionStarted)
 	{
-		if (FNetworkHelper::HasCosmetics(this))
-			UGameplayStatics::SpawnSoundAttached(SelfDestructionSequenceStartedSound, StaticMeshComp);
+		bSelfDestructionStarted = true;
+		OnRep_bSelfDestructionStarted();
 		
 		if (FNetworkHelper::HasAuthority(this))
 			GetWorld()->GetTimerManager().SetTimer(OverlappedWithPlayerSelfHarm_TimerHandle, this, &ASTrackerBot::SelfHarmNearPlayer,
@@ -72,13 +76,23 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor* OtherActor)
 	}
 }
 
+void ASTrackerBot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASTrackerBot, bExploded);
+	DOREPLIFETIME(ASTrackerBot, bSelfDestructionStarted);
+}
+
 void ASTrackerBot::HandleHealthChanged(USHealthComponent* _, int32 HealthDelta)
 {
-	PlayEffectsOnDamage();
-
-	if (HealthComp->GetCurrentHealthPoints() <= 0)
-		Explode();
+	if (FNetworkHelper::HasCosmetics(this))
+		PlayEffectsOnDamage();
 	
+	if (FNetworkHelper::HasAuthority(this))
+		if (HealthComp->GetCurrentHealthPoints() <= 0)
+			Explode();
+		
 	UE_LOG(LogTemp, Log, TEXT("%s is damaged. Remaining health is %i"), *GetName(), HealthComp->GetCurrentHealthPoints());
 }
 
@@ -124,7 +138,9 @@ void ASTrackerBot::MoveToTargetByForce()
 
 void ASTrackerBot::SelfHarmNearPlayer()
 {
-	UGameplayStatics::ApplyDamage(this, SelfHarmDamage, GetController(), this, nullptr);
+	check(FNetworkHelper::HasAuthority(this));
+	if (!bExploded)
+		UGameplayStatics::ApplyDamage(this, SelfHarmDamage, GetController(), this, nullptr);
 }
 
 void ASTrackerBot::Explode()
@@ -133,10 +149,8 @@ void ASTrackerBot::Explode()
 		return;
 
 	bExploded = true;
+	OnRep_bExploded();
 	
-	if (FNetworkHelper::HasCosmetics(this))
-		PlayExplosionEffects();
-
 	if (FNetworkHelper::HasAuthority(this))
 		ApplyDamageAndSelfDestroy();
 }
@@ -161,6 +175,22 @@ void ASTrackerBot::ApplyDamageAndSelfDestroy()
 	
 	UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius, ExplosionDamageClass,
                                         IgnoredActors, this, this->GetController(), true);
-	
-	Destroy();
+
+	SetLifeSpan(1.0f);
+}
+
+void ASTrackerBot::OnRep_bSelfDestructionStarted() const
+{
+	if (FNetworkHelper::HasCosmetics(this))
+		UGameplayStatics::SpawnSoundAttached(SelfDestructionSequenceStartedSound, StaticMeshComp);
+}
+
+void ASTrackerBot::OnRep_bExploded() const
+{
+	if (FNetworkHelper::HasCosmetics(this))
+		PlayExplosionEffects();
+
+	StaticMeshComp->SetSimulatePhysics(false);
+	StaticMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticMeshComp->SetVisibility(false);
 }
