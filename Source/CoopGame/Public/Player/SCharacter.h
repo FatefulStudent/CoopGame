@@ -1,6 +1,8 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include "Interfaces/Interactor.h"
+
 
 #include "SCharacter.generated.h"
 
@@ -8,9 +10,10 @@ class USHealthComponent;
 class ASWeapon;
 class UCameraComponent;
 class USpringArmComponent;
+class IInteractable;
 
 UCLASS(meta=(ChildCannotTick))
-class COOPGAME_API ASCharacter : public ACharacter
+class COOPGAME_API ASCharacter : public ACharacter, public IInteractor
 {
 	GENERATED_BODY()
 
@@ -59,10 +62,19 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
-
 	// ~ACharacter overrides
+
+	// IInteractorInterface overrides
+	virtual bool WantToInteract(IInteractable* Interactive) const override;
+
+	// Server-Only: interacts with interactable: picks up the objective
+	virtual void Interact(IInteractable* Interactive) override;
+	// ~IInteractorInterface overrides
+
+	void TryInteractingWith(AActor* OtherActor);
 	
 	void SpawnWeapon();
 	void TickCamera(float DeltaSeconds);

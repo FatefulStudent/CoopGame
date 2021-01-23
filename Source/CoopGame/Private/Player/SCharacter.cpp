@@ -3,13 +3,16 @@
 #include "Common/Components/SHealthComponent.h"
 #include "Weapon/SWeapon.h"
 #include "CoopGame/CoopGame.h"
+#include "Interfaces/Interactable.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "LevelObjects/SPickUp.h"
 #include "Net/UnrealNetwork.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogSCharacter, Log, All)
 
 ASCharacter::ASCharacter()
 {
@@ -79,6 +82,14 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ASCharacter::Reload);
 }
 
+void ASCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+
+	if (ensureAlways(HasAuthority()))
+		TryInteractingWith(OtherActor);
+}
+
 void ASCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (FNetworkHelper::HasAuthority(this))
@@ -94,6 +105,71 @@ void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 
 	DOREPLIFETIME(ASCharacter, bDied);
 	DOREPLIFETIME(ASCharacter, CurrentWeapon);
+}
+
+bool ASCharacter::WantToInteract(IInteractable* Interactive) const
+{
+	return true;
+}
+
+void ASCharacter::Interact(IInteractable* Interactive)
+{
+	check(HasAuthority());
+	
+	if (!ensureAlways(WantToInteract(Interactive)))
+		return;
+	
+	if (Interactive->IsAvailableForInteraction())
+	{
+		if (Cast<ASPickUp>(Interactive))
+		{
+			Interactive->OnSuccessfulInteraction();
+		}
+		else
+		{
+			UE_LOG(LogSCharacter,
+                Log,
+                TEXT("%s: Tried to interact with %s, but it was not an objective."),
+                *GetName(),
+                *Cast<UObject>(Interactive)->GetName())
+		}
+	}
+	else
+	{
+		UE_LOG(LogSCharacter,
+            Log,
+            TEXT("%s: Tried to interact with %s, but it was not available for interaction."),
+            *GetName(),
+            *Cast<UObject>(Interactive)->GetName())
+	}
+	
+}
+
+void ASCharacter::TryInteractingWith(AActor* OtherActor)
+{
+	if (IInteractable* OverlappedInteractive = Cast<IInteractable>(OtherActor))
+	{
+		if (WantToInteract(OverlappedInteractive))
+		{
+			Interact(OverlappedInteractive);
+		}
+		else
+		{
+			UE_LOG(LogSCharacter,
+                Log,
+                TEXT("%s: Tried to interact with %s, but character didn't want to interact with it."),
+                *GetName(),
+                *OtherActor->GetName())
+		}
+	}
+	else
+	{
+		UE_LOG(LogSCharacter,
+            Log,
+            TEXT("%s: Overlapped with %s, but it was not an interactable."),
+            *GetName(),
+            *OtherActor->GetName())		
+	}
 }
 
 void ASCharacter::SpawnWeapon()
