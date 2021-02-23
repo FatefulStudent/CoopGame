@@ -19,20 +19,33 @@ protected:
 	FTimerHandle Tick_TimerHandle;
 
 	int32 NumberOfTicksProcessed = 0;
+
+	TWeakObjectPtr<APawn> InteractionInstigator;
 	
 public:	
 	UFUNCTION(BlueprintImplementableEvent, Category=PowerUps)
-	void OnPowerUpActivated();
+	void OnPowerUpActivated(APawn* InInteractionInstigator);
 	
 	UFUNCTION(BlueprintImplementableEvent, Category=PowerUps)
-	void OnPowerUpTicked();
+	void OnPowerUpTicked(APawn* InInteractionInstigator);
 	
 	UFUNCTION(BlueprintImplementableEvent, Category=PowerUps)
-	void OnPowerUpExpired();
+	void OnPowerUpExpired(APawn* InInteractionInstigator);
 
-	void ActivatePowerUp();
+
+	ASPowerUp();
+	
+	void ActivatePowerUp(APawn* InInteractionInstigator);
 	
 protected:
-	void OnTicked();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastPowerUpActivated(APawn* InInteractionInstigator);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastPowerUpTick();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastPowerUpExpired();
 
 };

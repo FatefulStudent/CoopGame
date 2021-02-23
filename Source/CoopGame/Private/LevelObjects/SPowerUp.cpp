@@ -1,30 +1,57 @@
 #include "LevelObjects/SPowerUp.h"
 
-void ASPowerUp::ActivatePowerUp()
+#include "Helpers/NetworkHelper.h"
+
+ASPowerUp::ASPowerUp()
 {
-	OnPowerUpActivated();
+	SetReplicates(true);
+}
+
+void ASPowerUp::ActivatePowerUp(APawn* InInteractionInstigator)
+{
+	check(FNetworkHelper::HasAuthority(this));
+	
+	NetMulticastPowerUpActivated(InInteractionInstigator);
 
 	if (TickInterval > 0.0f)
 	{
-		GetWorldTimerManager().SetTimer(Tick_TimerHandle, this, &ASPowerUp::OnTicked,
-			TickInterval, true);
+		GetWorldTimerManager().SetTimer(Tick_TimerHandle, this, &ASPowerUp::NetMulticastPowerUpTick,
+            TickInterval, true);
 	}
 	else
 	{
-		OnTicked();
+		NetMulticastPowerUpTick();
 	}
 }
 
-void ASPowerUp::OnTicked()
+void ASPowerUp::NetMulticastPowerUpExpired_Implementation()
 {
-	OnPowerUpTicked();
-	NumberOfTicksProcessed++;
+	OnPowerUpExpired(InteractionInstigator.Get());
 
-	if (NumberOfTicksProcessed >= TotalNumberOfTicks)
+	if (FNetworkHelper::HasAuthority(this))
 	{
-		OnPowerUpExpired();
-
 		GetWorldTimerManager().ClearTimer(Tick_TimerHandle);
-		
+		SetLifeSpan(1.0f);
 	}
+}
+
+void ASPowerUp::NetMulticastPowerUpTick_Implementation()
+{
+	OnPowerUpTicked(InteractionInstigator.Get());
+	
+	if (FNetworkHelper::HasAuthority(this))
+	{
+		NumberOfTicksProcessed++;
+		if (NumberOfTicksProcessed >= TotalNumberOfTicks)
+		{
+			NetMulticastPowerUpExpired();
+		}
+	}
+}
+
+void ASPowerUp::NetMulticastPowerUpActivated_Implementation(APawn* InInteractionInstigator)
+{
+	InteractionInstigator = InInteractionInstigator;
+	
+	OnPowerUpActivated(InteractionInstigator.Get());
 }

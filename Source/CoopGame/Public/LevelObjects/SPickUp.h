@@ -39,7 +39,7 @@ public:
 
 	// IInteractive interface
 	virtual bool IsAvailableForInteraction() const override;
-	virtual void OnSuccessfulInteraction() override;
+	virtual void OnSuccessfulInteraction(APawn* InteractionInstigator) override;
 	// ~IInteractive interface
 
 protected:

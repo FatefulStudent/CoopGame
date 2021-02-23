@@ -21,5 +21,5 @@ class COOPGAME_API IInteractable
 
 public:
 	virtual bool IsAvailableForInteraction() const = 0;
-	virtual void OnSuccessfulInteraction() = 0;
+	virtual void OnSuccessfulInteraction(APawn* InteractionInstigator) = 0;
 };

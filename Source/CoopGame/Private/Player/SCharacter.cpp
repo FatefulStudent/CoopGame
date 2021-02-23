@@ -31,7 +31,8 @@ ASCharacter::ASCharacter()
 
 	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("Health"));
 	
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WeaponTraceChannel, ECR_Ignore);	
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WeaponTraceChannel, ECR_Ignore);
+	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
 }
 
 FVector ASCharacter::GetPawnViewLocation() const
@@ -39,15 +40,29 @@ FVector ASCharacter::GetPawnViewLocation() const
 	return CameraComp->GetComponentLocation();
 }
 
+void ASCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+
+	if (FNetworkHelper::HasAuthority(this))
+	{
+		GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+	}
+}
+
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
 	DefaultFOV = CameraComp->FieldOfView;
-	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+	
 
 	if (FNetworkHelper::HasAuthority(this))
+	{
 		SpawnWeapon();
+	}
 }
 
 void ASCharacter::Tick(float DeltaSeconds)
@@ -123,7 +138,7 @@ void ASCharacter::Interact(IInteractable* Interactive)
 	{
 		if (Cast<ASPickUp>(Interactive))
 		{
-			Interactive->OnSuccessfulInteraction();
+			Interactive->OnSuccessfulInteraction(this);
 		}
 		else
 		{

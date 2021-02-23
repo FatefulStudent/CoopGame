@@ -2,11 +2,14 @@
 
 #include "Components/DecalComponent.h"
 #include "Components/SphereComponent.h"
+#include "Helpers/NetworkHelper.h"
 #include "LevelObjects/SPowerUp.h"
 
 
 ASPickUp::ASPickUp()
 {
+	SetReplicates(true);
+	
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -28,11 +31,15 @@ bool ASPickUp::IsAvailableForInteraction() const
 	return !OnCooldown;
 }
 
-void ASPickUp::OnSuccessfulInteraction()
+void ASPickUp::OnSuccessfulInteraction(APawn* InteractionInstigator)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Pickup %s was picked up"), *GetName())
+	check(FNetworkHelper::HasAuthority(this));
+	
+	check(InteractionInstigator);
+	
+	UE_LOG(LogTemp, Warning, TEXT("Pickup %s was picked up by "), *GetName(), *InteractionInstigator->GetName())
 	OnCooldown = true;
-	SpawnedPowerUp->ActivatePowerUp();
+	SpawnedPowerUp->ActivatePowerUp(InteractionInstigator);
 	SpawnedPowerUp->SetActorEnableCollision(false);
 	SpawnedPowerUp->SetActorHiddenInGame(true);
 
@@ -43,12 +50,15 @@ void ASPickUp::OnSuccessfulInteraction()
 void ASPickUp::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	RespawnPowerUp();
+
+	if (FNetworkHelper::HasAuthority(this))
+		RespawnPowerUp();
 }
 
 void ASPickUp::RespawnPowerUp()
 {
+	check(FNetworkHelper::HasAuthority(this));
+	
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
