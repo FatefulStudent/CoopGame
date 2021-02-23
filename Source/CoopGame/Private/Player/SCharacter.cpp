@@ -129,7 +129,7 @@ void ASCharacter::Interact(IInteractable* Interactive)
 		{
 			UE_LOG(LogSCharacter,
                 Log,
-                TEXT("%s: Tried to interact with %s, but it was not an objective."),
+                TEXT("%s: Tried to interact with %s, but it was an unknown pickup."),
                 *GetName(),
                 *Cast<UObject>(Interactive)->GetName())
 		}
@@ -164,11 +164,11 @@ void ASCharacter::TryInteractingWith(AActor* OtherActor)
 	}
 	else
 	{
+		const FString ActorName = OtherActor ? OtherActor->GetName() : "NULL Actor Name";	
 		UE_LOG(LogSCharacter,
             Log,
-            TEXT("%s: Overlapped with %s, but it was not an interactable."),
-            *GetName(),
-            *OtherActor->GetName())		
+            TEXT("%s: Overlapped with %s, but it was not an interactable, or was NULL."),
+            *GetName(), *ActorName);
 	}
 }
 

@@ -8,6 +8,7 @@
 #include "SPickUp.generated.h"
 
 class USphereComponent;
+class ASPowerUp;
 
 UCLASS()
 class COOPGAME_API ASPickUp : public AActor, public IInteractable
@@ -21,8 +22,17 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
 	UDecalComponent* DecalComp;
 
+	UPROPERTY(EditDefaultsOnly, Category=Visual)
+	TSubclassOf<ASPowerUp> PowerUpClass;
+
+	UPROPERTY(EditDefaultsOnly, Category=Visual)
+	float RespawnInterval = 5.0f;
+
 private:
+	UPROPERTY() ASPowerUp* SpawnedPowerUp;
 	bool OnCooldown = false;
+
+	FTimerHandle RespawnPowerUp_TimerHandle;
 	
 public:
 	ASPickUp();
@@ -35,4 +45,5 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	void RespawnPowerUp();
 };
