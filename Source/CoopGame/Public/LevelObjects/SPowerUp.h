@@ -14,7 +14,7 @@ protected:
 	int32 TotalNumberOfTicks = 0;
 
 	UPROPERTY(EditDefaultsOnly)
-	int32 TickInterval = 0.0f;
+	float TickInterval = 0.0f;
 
 	FTimerHandle Tick_TimerHandle;
 

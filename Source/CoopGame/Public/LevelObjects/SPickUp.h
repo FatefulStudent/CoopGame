@@ -22,10 +22,10 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category=Visual)
 	UDecalComponent* DecalComp;
 
-	UPROPERTY(EditDefaultsOnly, Category=Visual)
+	UPROPERTY(EditAnywhere, Category=PowerUps)
 	TSubclassOf<ASPowerUp> PowerUpClass;
 
-	UPROPERTY(EditDefaultsOnly, Category=Visual)
+	UPROPERTY(EditAnywhere, Category=PowerUps)
 	float RespawnInterval = 5.0f;
 
 private:

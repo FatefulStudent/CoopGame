@@ -27,6 +27,9 @@ public:
 	int32 GetMaxHealthPoints() const;
 	int32 GetCurrentHealthPoints() const;
 
+	UFUNCTION(BlueprintCallable)
+	void Heal(int32 HealAmount);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
