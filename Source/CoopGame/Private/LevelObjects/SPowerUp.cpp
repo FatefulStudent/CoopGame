@@ -7,7 +7,7 @@ void ASPowerUp::ActivatePowerUp()
 	if (TickInterval > 0.0f)
 	{
 		GetWorldTimerManager().SetTimer(Tick_TimerHandle, this, &ASPowerUp::OnTicked,
-			TickInterval, true, 0.0f);
+			TickInterval, true);
 	}
 	else
 	{
